@@ -91,7 +91,7 @@ const openDatePicker = () => {
     try {
       const currentRole = userRole || sessionStorage.getItem('userRole') || 'jpmc';
       const promises = selectedOrders.map(orderId => 
-        fetch(`http://localhost:5050/api/orders/${orderId}/collection-date`, {
+        fetch(`https://grpharmacyappserver.onrender.com/api/orders/${orderId}/collection-date`, {
           method: 'PUT',
           headers: { 
             'Content-Type': 'application/json',
@@ -177,7 +177,7 @@ const openDatePicker = () => {
     try {
       const currentRole = userRole || sessionStorage.getItem('userRole') || 'jpmc';
       
-      const response = await fetch('http://localhost:5050/api/orders', {
+      const response = await fetch('https://grpharmacyappserver.onrender.com/api/orders', {
         headers: {
           'Content-Type': 'application/json',
           'X-User-Role': currentRole
@@ -280,7 +280,7 @@ const openDatePicker = () => {
       const currentRole = userRole || sessionStorage.getItem('userRole') || 'jpmc';
       
       const response = await fetch(
-        `http://localhost:5050/api/orders/${orderId}/collection-date`,
+        `https://grpharmacyappserver.onrender.com/api/orders/${orderId}/collection-date`,
         {
           method: 'PUT',
           headers: { 
