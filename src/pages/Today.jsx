@@ -15,6 +15,16 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios'; // Import axios for better HTTP requests
+
+// Create an axios instance with base URL
+const api = axios.create({
+  baseURL: 'https://grpharmacyappserver.onrender.com/api',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-User-Role': sessionStorage.getItem('userRole') || 'jpmc'
+  }
+});
 
 const Today = () => {
   const [orders, setOrders] = useState([]);
@@ -89,20 +99,12 @@ const openDatePicker = () => {
     }
 
     try {
-      const currentRole = userRole || sessionStorage.getItem('userRole') || 'jpmc';
       const promises = selectedOrders.map(orderId => 
-        fetch(`https://grpharmacyappserver.onrender.com/api/orders/${orderId}/collection-date`, {
-          method: 'PUT',
-          headers: { 
-            'Content-Type': 'application/json',
-            'X-User-Role': currentRole
-          },
-          body: JSON.stringify({ collectionDate: bulkCollectionDate })
-        })
+        api.put(`/orders/${orderId}/collection-date`, { collectionDate: bulkCollectionDate })
       );
 
       const responses = await Promise.all(promises);
-      const results = await Promise.all(responses.map(res => res.json()));
+      const results = responses.map(res => res.data);
 
       setOrders(orders.map(order => {
         const updatedOrder = results.find(r => r._id === order._id);
@@ -116,7 +118,7 @@ const openDatePicker = () => {
       alert(`Successfully updated ${results.length} orders!`);
     } catch (error) {
       console.error('Error updating bulk collection dates:', error);
-      alert(`Error: ${error.message}`);
+      alert(`Error: ${error.response?.data?.error || error.message}`);
     }
   };
 
@@ -175,24 +177,11 @@ const openDatePicker = () => {
     setError(null);
     
     try {
-      const currentRole = userRole || sessionStorage.getItem('userRole') || 'jpmc';
-      
-      const response = await fetch('https://grpharmacyappserver.onrender.com/api/orders', {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-Role': currentRole
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch orders: ${response.statusText}`);
-      }
-      
-      const allOrders = await response.json();
-      
-      // Filter orders for the selected date
       const selectedDate = new Date(currentDate);
       selectedDate.setHours(0, 0, 0, 0);
+      
+      const response = await api.get('/orders');
+      const allOrders = response.data;
       
       const filteredOrders = allOrders.filter(order => {
         try {
@@ -201,18 +190,7 @@ const openDatePicker = () => {
           
           let orderDate;
           if (typeof dateField === 'string') {
-            if (dateField.includes('T')) {
-              orderDate = new Date(dateField);
-            } else if (dateField.includes('/')) {
-              const parts = dateField.split('/');
-              if (parts.length === 3) {
-                orderDate = new Date(parts[2], parts[0] - 1, parts[1]);
-              } else {
-                return false;
-              }
-            } else {
-              orderDate = new Date(dateField);
-            }
+            orderDate = new Date(dateField);
           } else if (dateField instanceof Date) {
             orderDate = dateField;
           }
@@ -222,15 +200,15 @@ const openDatePicker = () => {
           orderDate.setHours(0, 0, 0, 0);
           return orderDate.getTime() === selectedDate.getTime();
         } catch (error) {
-          console.warn('Could not parse date:', dateField, error);
+          console.warn('Could not parse date:', error);
           return false;
         }
       });
       
       setOrders(filteredOrders);
     } catch (err) {
-      setError(err.message);
-      console.error('Full error:', err);
+      setError(err.response?.data?.error || err.message);
+      console.error('Error fetching orders:', err);
     } finally {
       setLoading(false);
     }
@@ -277,25 +255,8 @@ const openDatePicker = () => {
 
   const updateCollectionDate = async (orderId, collectionDate) => {
     try {
-      const currentRole = userRole || sessionStorage.getItem('userRole') || 'jpmc';
-      
-      const response = await fetch(
-        `https://grpharmacyappserver.onrender.com/api/orders/${orderId}/collection-date`,
-        {
-          method: 'PUT',
-          headers: { 
-            'Content-Type': 'application/json',
-            'X-User-Role': currentRole
-          },
-          body: JSON.stringify({ collectionDate })
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to update collection date: ${response.statusText}`);
-      }
-
-      const updatedOrder = await response.json();
+      const response = await api.put(`/orders/${orderId}/collection-date`, { collectionDate });
+      const updatedOrder = response.data;
       
       setOrders(orders.map(order => 
         order._id === updatedOrder._id ? updatedOrder : order
@@ -305,7 +266,7 @@ const openDatePicker = () => {
       alert('Collection date updated successfully!');
     } catch (error) {
       console.error('Error updating collection date:', error);
-      alert(`Error: ${error.message}`);
+      alert(`Error: ${error.response?.data?.error || error.message}`);
     }
   };
 

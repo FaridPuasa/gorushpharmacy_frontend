@@ -16,7 +16,7 @@ function App() {
    useEffect(() => {
     // Ping backend every 10 minutes (600,000ms)
     const interval = setInterval(() => {
-      fetch('https://your-render-backend-url.onrender.com/api/health')
+      fetch('https://grpharmacyappserver.onrender.com/api/health')
         .then(() => console.log('Backend pinged successfully'))
         .catch(err => console.error('Ping failed:', err));
     }, 600_000); // 10 minutes
