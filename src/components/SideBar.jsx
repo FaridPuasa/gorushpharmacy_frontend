@@ -49,12 +49,12 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     },
   ];
 
+  // Updated bottom menu items - removed path and action for logout
   const bottomMenuItems = [
     {
       id: 'logout',
       label: 'Logout',
       icon: LogOut,
-      path: '/logout',
       action: 'logout',
       roles: ['gorush', 'jpmc', 'moh']
     }
@@ -150,10 +150,19 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     );
   }
 
+  // Updated handleLogout function
   const handleLogout = () => {
+    console.log('Logging out...');
+    
+    // Clear all authentication data
     sessionStorage.removeItem('userRole');
     sessionStorage.removeItem('userSubRole');
-    window.location.reload(); // This will trigger the password modal again
+    
+    // Clear any other stored data if needed
+    sessionStorage.clear();
+    
+    // Force a complete page reload to reset the app state
+    window.location.href = window.location.origin;
   };
 
   // Get role display name
@@ -312,6 +321,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
           const Icon = item.icon;
           const isHovered = hoveredItem === item.id;
           
+          // Only render logout as a button, not a link
           if (item.action === 'logout') {
             return (
               <button
@@ -326,7 +336,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                   border: 'none',
                   width: '100%',
                   textAlign: 'left',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '6px',
+                  color: 'inherit',
+                  fontSize: 'inherit'
                 }}
               >
                 <div className="menu-item-content">
@@ -339,6 +353,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             );
           }
           
+          // For other items (if any), render as links
           return (
             <Link
               to={item.path}
