@@ -22,7 +22,7 @@ const api = axios.create({
   baseURL: 'https://grpharmacyappserver.onrender.com/api',
   headers: {
     'Content-Type': 'application/json',
-    'X-User-Role': sessionStorage.getItem('userRole') || 'jpmc'
+    'X-User-Role': userRole || 'jpmc'
   }
 });
 
