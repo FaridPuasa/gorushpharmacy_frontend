@@ -46,15 +46,16 @@ const Today = () => {
   };
 
   const handleDateSelect = (date) => {
-    setCurrentDate(new Date(date));
-    setShowDatePicker(false);
-  };
+  setCurrentDate(new Date(date));
+  setShowDatePicker(false);
+};
 
-  const openDatePicker = () => {
-    setTempSelectedDate(currentDate);
-    setShowDatePicker(true);
-  };
+const openDatePicker = () => {
+  setTempSelectedDate(currentDate);
+  setShowDatePicker(true);
+};
   
+
   // Navigation between dates
   const navigateToPreviousDay = () => {
     const newDate = new Date(currentDate);
@@ -169,27 +170,6 @@ const Today = () => {
     return currentRole;
   };
 
-  // Function to filter orders by product based on user role
-  const filterByRole = (orders, role) => {
-    if (!role) return orders;
-    
-    role = role.toLowerCase();
-    
-    if (role === 'gorush') {
-      return orders; // Gorush can see all orders
-    } else if (role === 'jpmc') {
-      return orders.filter(order => 
-        order.product === 'pharmacyjpmc' || !order.product
-      );
-    } else if (role === 'moh') {
-      return orders.filter(order => 
-        order.product === 'pharmacymoh'
-      );
-    }
-    
-    return orders;
-  };
-
   const fetchOrdersForDate = async () => {
     setLoading(true);
     setError(null);
@@ -208,12 +188,9 @@ const Today = () => {
         throw new Error(`Failed to fetch orders: ${response.statusText}`);
       }
       
-      let allOrders = await response.json();
+      const allOrders = await response.json();
       
-      // First filter by role
-      allOrders = filterByRole(allOrders, currentRole);
-      
-      // Then filter by date
+      // Filter orders for the selected date
       const selectedDate = new Date(currentDate);
       selectedDate.setHours(0, 0, 0, 0);
       
@@ -279,6 +256,7 @@ const Today = () => {
 
     setFilteredOrders(filtered);
   };
+
   const getStatusCounts = () => {
     const counts = {
       all: orders.length,
@@ -299,8 +277,25 @@ const Today = () => {
 
   const updateCollectionDate = async (orderId, collectionDate) => {
     try {
-      const response = await api.put(`/orders/${orderId}/collection-date`, { collectionDate });
-      const updatedOrder = response.data;
+      const currentRole = userRole || sessionStorage.getItem('userRole') || 'jpmc';
+      
+      const response = await fetch(
+        `http://localhost:5050/api/orders/${orderId}/collection-date`,
+        {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-User-Role': currentRole
+          },
+          body: JSON.stringify({ collectionDate })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to update collection date: ${response.statusText}`);
+      }
+
+      const updatedOrder = await response.json();
       
       setOrders(orders.map(order => 
         order._id === updatedOrder._id ? updatedOrder : order
@@ -310,7 +305,7 @@ const Today = () => {
       alert('Collection date updated successfully!');
     } catch (error) {
       console.error('Error updating collection date:', error);
-      alert(`Error: ${error.response?.data?.error || error.message}`);
+      alert(`Error: ${error.message}`);
     }
   };
 
@@ -1300,4 +1295,3 @@ const Today = () => {
 };
 
 export default Today;
-
