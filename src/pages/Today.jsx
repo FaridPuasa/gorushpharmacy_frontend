@@ -15,16 +15,6 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios'; // Import axios for better HTTP requests
-
-// Create an axios instance with base URL
-const api = axios.create({
-  baseURL: 'https://grpharmacyappserver.onrender.com/api',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-User-Role': userRole || 'jpmc'
-  }
-});
 
 const Today = () => {
   const [orders, setOrders] = useState([]);
@@ -56,16 +46,15 @@ const Today = () => {
   };
 
   const handleDateSelect = (date) => {
-  setCurrentDate(new Date(date));
-  setShowDatePicker(false);
-};
+    setCurrentDate(new Date(date));
+    setShowDatePicker(false);
+  };
 
-const openDatePicker = () => {
-  setTempSelectedDate(currentDate);
-  setShowDatePicker(true);
-};
+  const openDatePicker = () => {
+    setTempSelectedDate(currentDate);
+    setShowDatePicker(true);
+  };
   
-
   // Navigation between dates
   const navigateToPreviousDay = () => {
     const newDate = new Date(currentDate);
@@ -99,12 +88,20 @@ const openDatePicker = () => {
     }
 
     try {
+      const currentRole = userRole || sessionStorage.getItem('userRole') || 'jpmc';
       const promises = selectedOrders.map(orderId => 
-        api.put(`/orders/${orderId}/collection-date`, { collectionDate: bulkCollectionDate })
+        fetch(`http://localhost:5050/api/orders/${orderId}/collection-date`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-User-Role': currentRole
+          },
+          body: JSON.stringify({ collectionDate: bulkCollectionDate })
+        })
       );
 
       const responses = await Promise.all(promises);
-      const results = responses.map(res => res.data);
+      const results = await Promise.all(responses.map(res => res.json()));
 
       setOrders(orders.map(order => {
         const updatedOrder = results.find(r => r._id === order._id);
@@ -118,7 +115,7 @@ const openDatePicker = () => {
       alert(`Successfully updated ${results.length} orders!`);
     } catch (error) {
       console.error('Error updating bulk collection dates:', error);
-      alert(`Error: ${error.response?.data?.error || error.message}`);
+      alert(`Error: ${error.message}`);
     }
   };
 
@@ -172,16 +169,53 @@ const openDatePicker = () => {
     return currentRole;
   };
 
+  // Function to filter orders by product based on user role
+  const filterByRole = (orders, role) => {
+    if (!role) return orders;
+    
+    role = role.toLowerCase();
+    
+    if (role === 'gorush') {
+      return orders; // Gorush can see all orders
+    } else if (role === 'jpmc') {
+      return orders.filter(order => 
+        order.product === 'pharmacyjpmc' || !order.product
+      );
+    } else if (role === 'moh') {
+      return orders.filter(order => 
+        order.product === 'pharmacymoh'
+      );
+    }
+    
+    return orders;
+  };
+
   const fetchOrdersForDate = async () => {
     setLoading(true);
     setError(null);
     
     try {
+      const currentRole = userRole || sessionStorage.getItem('userRole') || 'jpmc';
+      
+      const response = await fetch('http://localhost:5050/api/orders', {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Role': currentRole
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch orders: ${response.statusText}`);
+      }
+      
+      let allOrders = await response.json();
+      
+      // First filter by role
+      allOrders = filterByRole(allOrders, currentRole);
+      
+      // Then filter by date
       const selectedDate = new Date(currentDate);
       selectedDate.setHours(0, 0, 0, 0);
-      
-      const response = await api.get('/orders');
-      const allOrders = response.data;
       
       const filteredOrders = allOrders.filter(order => {
         try {
@@ -190,7 +224,18 @@ const openDatePicker = () => {
           
           let orderDate;
           if (typeof dateField === 'string') {
-            orderDate = new Date(dateField);
+            if (dateField.includes('T')) {
+              orderDate = new Date(dateField);
+            } else if (dateField.includes('/')) {
+              const parts = dateField.split('/');
+              if (parts.length === 3) {
+                orderDate = new Date(parts[2], parts[0] - 1, parts[1]);
+              } else {
+                return false;
+              }
+            } else {
+              orderDate = new Date(dateField);
+            }
           } else if (dateField instanceof Date) {
             orderDate = dateField;
           }
@@ -200,15 +245,15 @@ const openDatePicker = () => {
           orderDate.setHours(0, 0, 0, 0);
           return orderDate.getTime() === selectedDate.getTime();
         } catch (error) {
-          console.warn('Could not parse date:', error);
+          console.warn('Could not parse date:', dateField, error);
           return false;
         }
       });
       
       setOrders(filteredOrders);
     } catch (err) {
-      setError(err.response?.data?.error || err.message);
-      console.error('Error fetching orders:', err);
+      setError(err.message);
+      console.error('Full error:', err);
     } finally {
       setLoading(false);
     }
@@ -234,7 +279,6 @@ const openDatePicker = () => {
 
     setFilteredOrders(filtered);
   };
-
   const getStatusCounts = () => {
     const counts = {
       all: orders.length,
