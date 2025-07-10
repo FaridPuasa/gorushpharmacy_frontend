@@ -249,7 +249,7 @@ const OrderDetails = () => {
     const fetchOrder = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/orders/${id}`, {
+        const response = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${id}`, {
           method: 'GET',
           headers: getRequestHeaders()
         });
@@ -297,7 +297,7 @@ const fetchDetrackData = async (trackingNumber) => {
   setDetrackError(null);
   
   try {
-    const response = await fetch(`/api/detrack/${trackingNumber}`, {
+    const response = await fetch(`https://grpharmacyappserver.onrender.com/api/detrack/${trackingNumber}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -326,7 +326,7 @@ const fetchDetrackData = async (trackingNumber) => {
   const handleStatusUpdate = async (statusType, newStatus) => {
     try {
       const endpoint = statusType === 'goRush' ? 'go-rush-status' : 'pharmacy-status';
-      const response = await fetch(`/api/orders/${id}/${endpoint}`, {
+      const response = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${id}/${endpoint}`, {
         method: 'PUT',
         headers: getRequestHeaders(),
         body: JSON.stringify({ status: newStatus }),
@@ -352,7 +352,7 @@ const fetchDetrackData = async (trackingNumber) => {
     }
 
     try {
-      const response = await fetch(`/api/orders/${id}/logs`, {
+      const response = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${id}/logs`, {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -389,7 +389,7 @@ const fetchDetrackData = async (trackingNumber) => {
     }
 
     try {
-      const response = await fetch(`/api/orders/${id}/pharmacy-remarks`, {
+      const response = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${id}/pharmacy-remarks`, {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
