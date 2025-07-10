@@ -97,7 +97,7 @@ useEffect(() => {
   if (!isRoleLoaded) return; 
 
   setIsLoading(true); 
-  fetch('/api/orders', {
+  fetch('https://grpharmacyappserver.onrender.com/api/orders', {
     headers: {
       'Content-Type': 'application/json',
       'X-User-Role': userRole || 'jpmc'
