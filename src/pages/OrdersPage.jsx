@@ -634,15 +634,7 @@ useEffect(() => {
                         {order.doTrackingNumber || <span style={styles.naText}>N/A</span>}
                       </td>
                       <td style={styles.td}>
-                        {order.dateTimeSubmission 
-                          ? new Date(order.dateTimeSubmission).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })
-                          : <span style={styles.naText}>N/A</span>}
+                        {order.dateTimeSubmission}
                       </td>
                       <td style={styles.td}>
                         {order.agingDays !== null ? (

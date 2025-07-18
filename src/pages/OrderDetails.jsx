@@ -542,7 +542,7 @@ const fetchDetrackData = async (trackingNumber) => {
               </div>
               <div style={styles.row}>
                 <span style={styles.label}>Created On:</span>
-                <span style={styles.value}>{new Date(order.dateTimeSubmission).toLocaleString()}</span>
+                <span style={styles.value}>{order.dateTimeSubmission}</span>
               </div>
               <div style={styles.row}>
                 <span style={styles.label}>Payment Method:</span>
