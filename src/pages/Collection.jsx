@@ -34,7 +34,6 @@ const CollectionDatesPage = () => {
   }, [selectedDate]);
 
   useEffect(() => {
-    // Update select all checkbox when orders selection changes
     if (selectedOrders.length > 0 && selectedOrders.length === currentOrders().length) {
       setSelectAll(true);
     } else {
@@ -117,7 +116,7 @@ const CollectionDatesPage = () => {
       }
       const data = await response.json();
       setOrders(data);
-      setSelectedOrders([]); // Clear selection when changing dates
+      setSelectedOrders([]);
     } catch (error) {
       console.error('Error fetching orders:', error);
     }
@@ -164,7 +163,7 @@ const CollectionDatesPage = () => {
   };
 
   const handleBulkStatusUpdate = async (status) => {
-    if (!status || selectedOrders.length === 0) return;
+    if (!status || selectedOrders.length === 0 || userRole !== 'gorush') return;
     
     try {
       const response = await fetch('https://grpharmacyappserver.onrender.com/api/orders/bulk-go-rush-status', {
@@ -334,18 +333,20 @@ const CollectionDatesPage = () => {
 >
       <div style={styles.orderHeader}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <input
-            type="checkbox"
-            checked={selectedOrders.includes(order._id)}
-            onChange={(e) => {
-              if (e.target.checked) {
-                setSelectedOrders([...selectedOrders, order._id]);
-              } else {
-                setSelectedOrders(selectedOrders.filter(id => id !== order._id));
-              }
-            }}
-            style={{ cursor: 'pointer' }}
-          />
+          {userRole === 'gorush' && (
+            <input
+              type="checkbox"
+              checked={selectedOrders.includes(order._id)}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setSelectedOrders([...selectedOrders, order._id]);
+                } else {
+                  setSelectedOrders(selectedOrders.filter(id => id !== order._id));
+                }
+              }}
+              style={{ cursor: 'pointer' }}
+            />
+          )}
           <span style={styles.orderTime}>
             <Clock size={16} />
             {order.dateTimeSubmission}
@@ -453,9 +454,9 @@ const CollectionDatesPage = () => {
               }}
               disabled={userRole !== 'gorush'}
             >
-      <option value="pending">Pending</option>
-      <option value="collected">Collected</option>
-      <option value="cancelled">Cancelled</option>
+              <option value="pending">Pending</option>
+              <option value="collected">Collected</option>
+              <option value="cancelled">Cancelled</option>
             </select>
             {userRole !== 'gorush' && (
               <div style={{
@@ -739,11 +740,18 @@ const CollectionDatesPage = () => {
 
       {selectedDate && (
         <div style={styles.ordersContainer}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '20px',
+          }}>
             <h2 style={styles.dateTitle}>
-              {selectedDate === 'no-date' ? 'Orders Without Collection Dates' : getDateLabel(selectedDate)}
+              {selectedDate === 'no-date'
+                ? 'Orders Without Collection Dates'
+                : getDateLabel(selectedDate)}
             </h2>
-            
+
             {selectedOrders.length > 0 && userRole === 'gorush' && (
               <div style={{ display: 'flex', gap: '10px' }}>
                 <select
@@ -756,8 +764,8 @@ const CollectionDatesPage = () => {
                   <option value="collected">Collected</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
-                <button 
-                  onClick={() => setSelectedOrders([])} 
+                <button
+                  onClick={() => setSelectedOrders([])}
                   style={styles.cancelButton}
                 >
                   Clear Selection
@@ -769,15 +777,22 @@ const CollectionDatesPage = () => {
           {selectedDate === 'no-date' ? (
             Object.entries(ordersWithoutDates).length > 0 ? (
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectAll}
-                    onChange={handleSelectAll}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  <span>Select all orders</span>
-                </div>
+                {userRole === 'gorush' && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    marginBottom: '10px',
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={selectAll}
+                      onChange={handleSelectAll}
+                      style={{ cursor: 'pointer' }}
+                    />
+                    <span>Select all orders</span>
+                  </div>
+                )}
                 {Object.entries(ordersWithoutDates).map(([dateString, dateOrders]) => (
                   <div key={dateString}>
                     <h3 style={{ margin: '15px 0 10px', fontSize: '16px' }}>
@@ -790,25 +805,34 @@ const CollectionDatesPage = () => {
                 ))}
               </div>
             ) : (
-              <p style={{ textAlign: 'center', color: '#666' }}>No orders without collection dates</p>
+              <p style={{ textAlign: 'center', color: '#666' }}>
+                No orders without collection dates
+              </p>
             )
           ) : orders.length > 0 ? (
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                <input
-                  type="checkbox"
-                  checked={selectAll}
-                  onChange={handleSelectAll}
-                  style={{ cursor: 'pointer' }}
-                />
-                <span>Select all orders</span>
-              </div>
-              <div style={styles.ordersList}>
-                {orders.map(renderOrderCard)}
-              </div>
+              {userRole === 'gorush' && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  marginBottom: '10px',
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={selectAll}
+                    onChange={handleSelectAll}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  <span>Select all orders</span>
+                </div>
+              )}
+              <div style={styles.ordersList}>{orders.map(renderOrderCard)}</div>
             </div>
           ) : (
-            <p style={{ textAlign: 'center', color: '#666' }}>No orders for this date</p>
+            <p style={{ textAlign: 'center', color: '#666' }}>
+              No orders for this date
+            </p>
           )}
         </div>
       )}
@@ -817,6 +841,8 @@ const CollectionDatesPage = () => {
     </div>
   );
 };
+
+
 
 const styles = {
   container: {

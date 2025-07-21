@@ -515,10 +515,7 @@ const fetchDetrackData = async (trackingNumber) => {
                   style={styles.statusSelect}
                 >
                   <option value="pending">Pending</option>
-                  <option value="in progress">In Progress</option>
-                  <option value="ready">Ready</option>
-                  <option value="collected">Collected</option>
-                  <option value="completed">Completed</option>
+                  <option value="ready">Ready to be Collected</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
 
