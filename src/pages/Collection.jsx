@@ -453,12 +453,9 @@ const CollectionDatesPage = () => {
               }}
               disabled={userRole !== 'gorush'}
             >
-              <option value="pending">Pending</option>
-              <option value="in progress">In Progress</option>
-              <option value="ready">Ready</option>
-              <option value="collected">Collected</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
+      <option value="pending">Pending</option>
+      <option value="collected">Collected</option>
+      <option value="cancelled">Cancelled</option>
             </select>
             {userRole !== 'gorush' && (
               <div style={{
@@ -756,10 +753,7 @@ const CollectionDatesPage = () => {
                 >
                   <option value="">Update Selected</option>
                   <option value="pending">Pending</option>
-                  <option value="in progress">In Progress</option>
-                  <option value="ready">Ready</option>
                   <option value="collected">Collected</option>
-                  <option value="completed">Completed</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
                 <button 
