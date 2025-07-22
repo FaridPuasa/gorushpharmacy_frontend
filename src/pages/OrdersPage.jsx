@@ -103,10 +103,9 @@ useEffect(() => {
 }, []);
 
 useEffect(() => {
-  if (!isRoleLoaded) return;
+  if (!isRoleLoaded) return; 
 
-  setIsLoading(true);
-
+  setIsLoading(true); 
   fetch('https://grpharmacyappserver.onrender.com/api/orders', {
     headers: {
       'Content-Type': 'application/json',
@@ -126,14 +125,14 @@ useEffect(() => {
       // Then process the data
       const processedData = roleFilteredData.map(order => {
         const isCollected = order.goRushStatus?.toLowerCase() === 'collected';
+        const isCancelled = order.goRushStatus?.toLowerCase() === 'cancelled';
         const isCompleted = ['cancelled', 'collected'].includes(order.pharmacyStatus?.toLowerCase());
         return {
           ...order,
-          agingDays: isCollected
-            ? 'collected'
-            : (!isCompleted && order.creationDate
-              ? Math.floor((new Date() - new Date(order.creationDate)) / (1000 * 60 * 60 * 24))
-              : null)
+          agingDays: isCollected ? 'collected' : 
+                    isCancelled ? 'cancelled' :
+                    (!isCompleted && order.creationDate ?
+                      Math.floor((new Date() - new Date(order.creationDate)) / (1000 * 60 * 60 * 24)) : null)
         };
       });
 
@@ -259,6 +258,7 @@ useEffect(() => {
 
 const getAgingBadgeStyle = (days) => {
   if (days === 'collected') return { backgroundColor: '#dcfce7', color: '#166534' };
+  if (days === 'cancelled') return { backgroundColor: '#fee2e2', color: '#991b1b' };
   if (!days && days !== 0) return { backgroundColor: '#f3f4f6', color: '#6b7280' };
   if (days === null) return { backgroundColor: '#f3f4f6', color: '#6b7280' };
   if (days <= 7) return { backgroundColor: '#dcfce7', color: '#166534' };
@@ -659,6 +659,13 @@ const getAgingBadgeStyle = (days) => {
       ...getAgingBadgeStyle(order.agingDays)
     }}>
       Collected
+    </span>
+  ) : order.agingDays === 'cancelled' ? (
+    <span style={{ 
+      ...styles.badge, 
+      ...getAgingBadgeStyle(order.agingDays)
+    }}>
+      Cancelled
     </span>
   ) : typeof order.agingDays === 'number' ? (
     <span style={{ 
