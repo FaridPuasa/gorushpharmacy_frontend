@@ -447,6 +447,59 @@ const Dashboard = () => {
               )}
             </div>
           </div>
+          {/* Tracking Numbers with Logs */}
+<div style={styles.logsTableContainer}>
+  <h3 style={styles.logsTableTitle}>Recent Activity Logs</h3>
+  <p style={styles.logsTableSubtitle}>Tracking numbers with recent system updates</p>
+  
+  <div style={{ overflowX: 'auto' }}>
+    <table style={styles.logsTable}>
+      <thead style={styles.tableHeader}>
+        <tr>
+          <th style={styles.tableHeaderCell}>Tracking #</th>
+          <th style={styles.tableHeaderCell}>Last Update</th>
+          <th style={styles.tableHeaderCell}>Log Count</th>
+          <th style={styles.tableHeaderCell}>Recent Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        {orders
+          .filter(order => order.logs && order.logs.length > 0)
+          .sort((a, b) => new Date(b.logs[b.logs.length - 1].createdAt) - new Date(a.logs[a.logs.length - 1].createdAt))
+          .slice(0, 5)
+          .map(order => (
+            <tr 
+              key={order._id}
+              style={styles.tableRow}
+              onMouseEnter={(e) => e.target.closest('tr').style.backgroundColor = '#f9fafb'}
+              onMouseLeave={(e) => e.target.closest('tr').style.backgroundColor = 'transparent'}
+            >
+              <td style={styles.tableCell}>
+                <span 
+                  style={styles.trackingNumber}
+                  onClick={() => handleTrackingNumberClick(order._id)}
+                >
+                  {order.doTrackingNumber || 'N/A'}
+                </span>
+              </td>
+              <td style={styles.tableCell}>
+                {order.logs[order.logs.length - 1].createdAt 
+                  ? new Date(order.logs[order.logs.length - 1].createdAt).toLocaleString() 
+                  : 'N/A'}
+              </td>
+              <td style={styles.tableCell}>
+                {order.logs.length}
+              </td>
+              <td style={styles.tableCell}>
+                {order.logs[order.logs.length - 1].note.substring(0, 50)}
+                {order.logs[order.logs.length - 1].note.length > 50 ? '...' : ''}
+              </td>
+            </tr>
+          ))}
+      </tbody>
+    </table>
+  </div>
+</div>
         </div>
       </div>
     </div>
@@ -769,7 +822,30 @@ const styles = {
     height: '48px',
     color: '#9ca3af',
     marginBottom: '16px'
-  }
+  },
+  logsTableContainer: {
+  backgroundColor: 'white',
+  borderRadius: '12px',
+  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+  border: '1px solid #e5e7eb',
+  marginTop: '24px',
+  padding: '24px'
+},
+logsTableTitle: {
+  fontSize: '18px',
+  fontWeight: '600',
+  color: '#111827',
+  margin: '0 0 4px 0'
+},
+logsTableSubtitle: {
+  fontSize: '14px',
+  color: '#6b7280',
+  margin: '0 0 16px 0'
+},
+logsTable: {
+  width: '100%',
+  borderCollapse: 'collapse'
+},
 };
 
 export default Dashboard;

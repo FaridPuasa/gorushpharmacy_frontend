@@ -266,36 +266,39 @@ const CollectionDatesPage = () => {
     return format(date, 'EEEE, MMMM d');
   };
 
-  const statusStyles = {
-    pending: { bg: '#fef3c7', text: '#92400e', icon: Clock },
-    ready: { bg: '#dbeafe', text: '#1e40af', icon: Package },
-    collected: { bg: '#dcfce7', text: '#166534', icon: Check },
-    completed: { bg: '#dcfce7', text: '#065f46', icon: Check },
-    cancelled: { bg: '#fee2e2', text: '#991b1b', icon: X },
-    'in progress': { bg: '#fef3c7', text: '#854d0e', icon: RefreshCw }
-  };
+const statusStyles = {
+  pending: { bg: '#fef3c7', text: '#92400e', icon: Clock },
+  'ready-collect': { bg: '#dcfce7', text: '#065f46', icon: Package }, // New status
+  ready: { bg: '#dbeafe', text: '#1e40af', icon: Package },
+  collected: { bg: '#dcfce7', text: '#166534', icon: Check },
+  completed: { bg: '#dcfce7', text: '#065f46', icon: Check },
+  cancelled: { bg: '#fee2e2', text: '#991b1b', icon: X },
+  'in progress': { bg: '#fef3c7', text: '#854d0e', icon: RefreshCw }
+};
 
-  const getStatusStyle = (status) => {
-    if (!status) return { ...styles.statusBadge, ...styles.statusPending };
 
-    switch (status.toLowerCase()) {
-      case 'ready':
-        return { ...styles.statusBadge, ...styles.statusReady };
-      case 'collected':
-      case 'completed':
-        return { ...styles.statusBadge, ...styles.statusCollected };
-      case 'cancelled':
-        return { ...styles.statusBadge, ...styles.statusCancelled };
-      case 'in progress':
-        return { 
-          ...styles.statusBadge, 
-          backgroundColor: '#fef3c7',
-          color: '#92400e'
-        };
-      default:
-        return { ...styles.statusBadge, ...styles.statusPending };
-    }
-  };
+const getStatusStyle = (status) => {
+  if (!status) return { ...styles.statusBadge, ...styles.statusPending };
+
+  switch (status.toLowerCase()) {
+    case 'ready-collect':  // New case
+    case 'ready':
+      return { ...styles.statusBadge, ...styles.statusReady };
+    case 'collected':
+    case 'completed':
+      return { ...styles.statusBadge, ...styles.statusCollected };
+    case 'cancelled':
+      return { ...styles.statusBadge, ...styles.statusCancelled };
+    case 'in progress':
+      return { 
+        ...styles.statusBadge, 
+        backgroundColor: '#fef3c7',
+        color: '#92400e'
+      };
+    default:
+      return { ...styles.statusBadge, ...styles.statusPending };
+  }
+};
 
   const getTotalOrdersWithoutDates = () => {
     return Object.values(ordersWithoutDates).reduce((total, orders) => total + orders.length, 0);
@@ -417,20 +420,20 @@ const CollectionDatesPage = () => {
         
         <div style={styles.actions}>
           <div style={{ position: 'relative' }}>
-            <select
-              value={order.pharmacyStatus || 'pending'}
-              onChange={(e) => handleUpdateStatus(order._id, 'pharmacyStatus', e.target.value)}
-              style={{
-                ...styles.statusSelect,
-                opacity: (userRole === 'jpmc' || userRole === 'moh') ? 1 : 0.6,
-                cursor: (userRole === 'jpmc' || userRole === 'moh') ? 'pointer' : 'not-allowed'
-              }}
-              disabled={userRole !== 'jpmc' && userRole !== 'moh'}
-            >
-              <option value="pending">Pending</option>
-              <option value="ready-collect">Ready to be Collected</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+<select
+  value={order.pharmacyStatus || 'pending'}
+  onChange={(e) => handleUpdateStatus(order._id, 'pharmacyStatus', e.target.value)}
+  style={{
+    ...styles.statusSelect,
+    opacity: (userRole === 'jpmc' || userRole === 'moh') ? 1 : 0.6,
+    cursor: (userRole === 'jpmc' || userRole === 'moh') ? 'pointer' : 'not-allowed'
+  }}
+  disabled={userRole !== 'jpmc' && userRole !== 'moh'}
+>
+  <option value="pending">Pending</option>
+  <option value="ready-collect">Ready to be Collected</option>
+  <option value="cancelled">Cancelled</option>
+</select>
             {userRole !== 'jpmc' && userRole !== 'moh' && (
               <div style={{
                 position: 'absolute',

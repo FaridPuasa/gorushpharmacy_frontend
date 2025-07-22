@@ -62,21 +62,22 @@ function OrdersPage() {
     });
   };
 
-  const statusColors = {
-    pending: { bg: '#e0e7ff', text: '#3730a3' },
-    'in progress': { bg: '#fef3c7', text: '#92400e' },
-    ready: { bg: '#dbeafe', text: '#1e40af' },
-    collected: { bg: '#dcfce7', text: '#166534' },
-    completed: { bg: '#dcfce7', text: '#065f46' },
-    cancelled: { bg: '#fee2e2', text: '#991b1b' }
-  };
+const statusColors = {
+  pending: { bg: '#e0e7ff', text: '#3730a3' },
+  'in progress': { bg: '#fef3c7', text: '#92400e' },
+  ready: { bg: '#dbeafe', text: '#1e40af' },
+  collected: { bg: '#dcfce7', text: '#166534' },
+  completed: { bg: '#dcfce7', text: '#065f46' },
+  cancelled: { bg: '#fee2e2', text: '#991b1b' },
+  default: { bg: '#f3f4f6', text: '#6b7280' } // Added default style
+};
 
-  const getStatusStyle = (status) => {
-    if (!status) return statusColors.default;
-    
-    const lowerStatus = status.toLowerCase();
-    return statusColors[lowerStatus] || statusColors.default;
-  };
+const getStatusStyle = (status) => {
+  if (!status) return statusColors.default;
+  
+  const lowerStatus = status.toLowerCase();
+  return statusColors[lowerStatus] || statusColors.default;
+};
 
   // Load user role first
   useEffect(() => {
@@ -700,35 +701,35 @@ useEffect(() => {
                         {order.passport || <span style={styles.naText}>N/A</span>}
                       </td>
                       <td style={styles.td}>
-                        {order.goRushStatus ? (
-                          <span style={{ 
-                            ...styles.badge,
-                            backgroundColor: getStatusStyle(order.goRushStatus).bg,
-                            color: getStatusStyle(order.goRushStatus).text,
-                            padding: '4px 8px',
-                            borderRadius: '9999px',
-                            fontSize: '12px',
-                            fontWeight: '500'
-                          }}>
-                            {order.goRushStatus}
-                          </span>
-                        ) : <span style={styles.naText}>N/A</span>}
-                      </td>
-                      <td style={styles.td}>
-                        {order.pharmacyStatus ? (
-                          <span style={{ 
-                            ...styles.badge,
-                            backgroundColor: getStatusStyle(order.pharmacyStatus).bg,
-                            color: getStatusStyle(order.pharmacyStatus).text,
-                            padding: '4px 8px',
-                            borderRadius: '9999px',
-                            fontSize: '12px',
-                            fontWeight: '500'
-                          }}>
-                            {order.pharmacyStatus}
-                          </span>
-                        ) : <span style={styles.naText}>N/A</span>}
-                      </td>
+  {order.goRushStatus ? (
+    <span style={{ 
+      ...styles.badge,
+      backgroundColor: getStatusStyle(order.goRushStatus).bg,
+      color: getStatusStyle(order.goRushStatus).text,
+      padding: '4px 8px',
+      borderRadius: '9999px',
+      fontSize: '12px',
+      fontWeight: '500'
+    }}>
+      {order.goRushStatus}
+    </span>
+  ) : <span style={styles.naText}>N/A</span>}
+</td>
+<td style={styles.td}>
+  {order.pharmacyStatus ? (
+    <span style={{ 
+      ...styles.badge,
+      backgroundColor: getStatusStyle(order.pharmacyStatus).bg,
+      color: getStatusStyle(order.pharmacyStatus).text,
+      padding: '4px 8px',
+      borderRadius: '9999px',
+      fontSize: '12px',
+      fontWeight: '500'
+    }}>
+      {order.pharmacyStatus}
+    </span>
+  ) : <span style={styles.naText}>N/A</span>}
+</td>
                     </tr>
                   ))}
                 </tbody>
