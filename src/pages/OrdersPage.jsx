@@ -95,9 +95,18 @@ const getStatusStyle = (status) => {
 }, []);
 
 useEffect(() => {
-  if (!isRoleLoaded) return; 
+  const role = sessionStorage.getItem('userRole');
+  const subrole = sessionStorage.getItem('userSubrole');
+  setUserRole(role || 'jpmc');
+  setUserSubrole(subrole || null);
+  setIsRoleLoaded(true);
+}, []);
 
-  setIsLoading(true); 
+useEffect(() => {
+  if (!isRoleLoaded) return;
+
+  setIsLoading(true);
+
   fetch('https://grpharmacyappserver.onrender.com/api/orders', {
     headers: {
       'Content-Type': 'application/json',
@@ -116,11 +125,15 @@ useEffect(() => {
 
       // Then process the data
       const processedData = roleFilteredData.map(order => {
+        const isCollected = order.goRushStatus?.toLowerCase() === 'collected';
         const isCompleted = ['cancelled', 'collected'].includes(order.pharmacyStatus?.toLowerCase());
         return {
           ...order,
-          agingDays: !isCompleted && order.creationDate ?
-            Math.floor((new Date() - new Date(order.creationDate)) / (1000 * 60 * 60 * 24)) : null
+          agingDays: isCollected
+            ? 'collected'
+            : (!isCompleted && order.creationDate
+              ? Math.floor((new Date() - new Date(order.creationDate)) / (1000 * 60 * 60 * 24))
+              : null)
         };
       });
 
@@ -128,8 +141,9 @@ useEffect(() => {
       setFilteredOrders(processedData);
     })
     .catch(err => console.error("Error fetching orders:", err))
-    .finally(() => setIsLoading(false)); // Set loading to false when done
+    .finally(() => setIsLoading(false));
 }, [isRoleLoaded, userRole]);
+
 
   useEffect(() => {
     let filtered = [...orders];
@@ -243,14 +257,15 @@ useEffect(() => {
     }
   };
 
-  const getAgingBadgeStyle = (days) => {
-    if (!days && days !== 0) return { backgroundColor: '#f3f4f6', color: '#6b7280' };
-    if (days === null) return { backgroundColor: '#f3f4f6', color: '#6b7280' };
-    if (days <= 7) return { backgroundColor: '#dcfce7', color: '#166534' };
-    if (days <= 30) return { backgroundColor: '#fef9c3', color: '#854d0e' };
-    if (days <= 60) return { backgroundColor: '#fee2e2', color: '#991b1b' };
-    return { backgroundColor: '#f3e8ff', color: '#7e22ce' };
-  };
+const getAgingBadgeStyle = (days) => {
+  if (days === 'collected') return { backgroundColor: '#dcfce7', color: '#166534' };
+  if (!days && days !== 0) return { backgroundColor: '#f3f4f6', color: '#6b7280' };
+  if (days === null) return { backgroundColor: '#f3f4f6', color: '#6b7280' };
+  if (days <= 7) return { backgroundColor: '#dcfce7', color: '#166534' };
+  if (days <= 30) return { backgroundColor: '#fef9c3', color: '#854d0e' };
+  if (days <= 60) return { backgroundColor: '#fee2e2', color: '#991b1b' };
+  return { backgroundColor: '#f3e8ff', color: '#7e22ce' };
+};
 
   // Show loading state until role is loaded
   if (!isRoleLoaded) {
@@ -637,16 +652,25 @@ useEffect(() => {
                       <td style={styles.td}>
                         {order.dateTimeSubmission}
                       </td>
-                      <td style={styles.td}>
-                        {order.agingDays !== null ? (
-                          <span style={{ 
-                            ...styles.badge, 
-                            ...getAgingBadgeStyle(order.agingDays)
-                          }}>
-                            {order.agingDays} days
-                          </span>
-                        ) : <span style={styles.naText}>N/A</span>}
-                      </td>
+<td style={styles.td}>
+  {order.agingDays === 'collected' ? (
+    <span style={{ 
+      ...styles.badge, 
+      ...getAgingBadgeStyle(order.agingDays)
+    }}>
+      Collected
+    </span>
+  ) : typeof order.agingDays === 'number' ? (
+    <span style={{ 
+      ...styles.badge, 
+      ...getAgingBadgeStyle(order.agingDays)
+    }}>
+      {order.agingDays} days
+    </span>
+  ) : (
+    <span style={styles.naText}>N/A</span>
+  )}
+</td>
                       <td style={{ ...styles.td, ...styles.truncated }}>
                         {order.collectionDate ? formatDate(order.collectionDate) : "N/A"}
                       </td>
