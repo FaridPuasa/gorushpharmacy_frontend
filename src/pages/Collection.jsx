@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Package, ChevronRight, ExternalLink, RefreshCw, Check, Clock, User, MapPin, Phone, X, CreditCard, FileText, Building, DollarSign, Users, Trash2, Edit3, Save, XCircle } from 'lucide-react';
+import { Calendar, Package, ChevronRight, ExternalLink, RefreshCw, Check, Clock, User, MapPin, Phone, X, CreditCard, FileText, Building, DollarSign, Users, Trash2, Edit3, Save, XCircle, Download } from 'lucide-react';
 import { format, parseISO, isToday, isTomorrow } from 'date-fns';
 import PasswordModal from '../components/PasswordModal';
 import { useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const CollectionDatesPage = () => {
   const [dates, setDates] = useState([]);
@@ -275,6 +279,40 @@ const statusStyles = {
   cancelled: { bg: '#fee2e2', text: '#991b1b', icon: X },
   'in progress': { bg: '#fef3c7', text: '#854d0e', icon: RefreshCw }
 };
+
+  const exportToExcel = () => {
+    const ordersToExport = selectedDate === 'no-date' 
+      ? Object.values(ordersWithoutDates).flat() 
+      : orders;
+
+    if (ordersToExport.length === 0) {
+      alert('No orders to export');
+      return;
+    }
+
+    const data = ordersToExport.map(order => ({
+      'Tracking Number': order.doTrackingNumber,
+      'Patient Name': order.receiverName,
+      'Patient Number': order.patientNumber,
+      'Phone Number': order.receiverPhoneNumber,
+      'Address': order.receiverAddress || 'N/A',
+      'Collection Date': order.collectionDate ? format(parseISO(order.collectionDate), 'yyyy-MM-dd') : 'Not set',
+      'Pharmacy Status': order.pharmacyStatus || 'pending',
+      'GoRush Status': order.goRushStatus || 'pending',
+      'Created On': order.dateTimeSubmission,
+      'Payment Method': order.paymentMethod || 'N/A',
+      'Payment Amount': order.paymentAmount ? `$${order.paymentAmount}` : 'N/A'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Orders');
+    
+    // Generate Excel file
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, `orders_${selectedDate || 'all'}_${format(new Date(), 'yyyyMMdd')}.xlsx`);
+  };
 
 
 const getStatusStyle = (status) => {
@@ -749,11 +787,25 @@ const getStatusStyle = (status) => {
             alignItems: 'center',
             marginBottom: '20px',
           }}>
-            <h2 style={styles.dateTitle}>
-              {selectedDate === 'no-date'
-                ? 'Orders Without Collection Dates'
-                : getDateLabel(selectedDate)}
-            </h2>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+    <h2 style={styles.dateTitle}>
+      {selectedDate === 'no-date'
+        ? 'Orders Without Collection Dates'
+        : getDateLabel(selectedDate)}
+    </h2>
+    <div style={{ display: 'flex', gap: '10px' }}>
+      <button 
+        onClick={exportToExcel}
+        style={{
+          ...styles.exportButton,
+          backgroundColor: '#10b981'
+        }}
+      >
+        <Download size={16} /> Excel
+      </button>
+    </div>
+  </div>
+
 
             {selectedOrders.length > 0 && userRole === 'gorush' && (
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -1232,6 +1284,21 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '8px'
+  },
+    exportButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '5px',
+    color: 'white',
+    border: 'none',
+    padding: '8px 12px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    transition: 'background-color 0.2s',
+    '&:hover': {
+      opacity: 0.9
+    }
   }
 };
 
