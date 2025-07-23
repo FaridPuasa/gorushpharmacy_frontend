@@ -315,6 +315,8 @@ const fetchDetrackData = async (trackingNumber) => {
     const data = apiResponse.data || apiResponse;
     setDetrackData(data);
     
+    // REMOVED the automatic log creation part
+    
   } catch (err) {
     console.error('Error fetching DeTrack data:', err);
     setDetrackError(err.message);
