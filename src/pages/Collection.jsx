@@ -520,17 +520,17 @@ const getStatusStyle = (status) => {
             View <ChevronRight size={16} />
           </button>
 
-          {userRole === 'jpmc' && editingOrderId !== order._id && (
-            <button
-              onClick={() => handleEditCollectionDate(order._id, order.collectionDate)}
-              style={styles.editButton}
-              onMouseEnter={(e) => e.currentTarget.style.background = '#059669'}
-              onMouseLeave={(e) => e.currentTarget.style.background = '#10b981'}
-            >
-              <Edit3 size={14} />
-              Edit Date
-            </button>
-          )}
+{(userRole === 'jpmc' || userRole === 'gorush') && editingOrderId !== order._id && (
+  <button
+    onClick={() => handleEditCollectionDate(order._id, order.collectionDate)}
+    style={styles.editButton}
+    onMouseEnter={(e) => e.currentTarget.style.background = '#059669'}
+    onMouseLeave={(e) => e.currentTarget.style.background = '#10b981'}
+  >
+    <Edit3 size={14} />
+    Edit Date
+  </button>
+)}
         </div>
       </div>
     </div>
