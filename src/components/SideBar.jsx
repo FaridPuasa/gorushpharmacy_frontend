@@ -1,15 +1,100 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Home, Users, Package, ChevronRight, Activity, Settings, LogOut } from 'lucide-react';
+import { Menu, X, Home, Users, Package, ChevronRight, ChevronDown, Activity, Settings, LogOut, Calendar, ClipboardList, Pill, FileText, Building2 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import '../styles/NavBar.css';
+
+// Minimal styles for elements not covered by CSS
+const styles = {
+  loadingSpinner: {
+    width: '16px',
+    height: '16px',
+    border: '2px solid #e5e7eb',
+    borderTop: '2px solid #3b82f6',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite'
+  },
+  iconActive: {
+    color: '#3b82f6'
+  },
+  iconDefault: {
+    color: '#94a3b8'
+  },
+  dropdownHeader: {
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    padding: '0.75rem 1rem',
+    margin: '0 0.5rem 0.5rem 0.5rem',
+    borderRadius: '8px',
+    transition: 'all 0.2s ease',
+    color: '#e2e8f0',
+    fontSize: '0.9rem',
+    fontWeight: '600',
+    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(29, 78, 216, 0.05))',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: 'rgba(59, 130, 246, 0.2)',
+    position: 'relative',
+    overflow: 'hidden'
+  },
+  dropdownHeaderHovered: {
+    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(29, 78, 216, 0.08))',
+    borderColor: 'rgba(59, 130, 246, 0.3)',
+    transform: 'translateX(2px)'
+  },
+  dropdownHeaderOpen: {
+    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(29, 78, 216, 0.1))',
+    borderColor: 'rgba(59, 130, 246, 0.4)',
+    color: '#93c5fd'
+  },
+  dropdownIcon: {
+    marginRight: '12px',
+    color: '#3b82f6',
+    padding: '4px',
+    background: 'rgba(59, 130, 246, 0.1)',
+    borderRadius: '6px'
+  },
+  dropdownChevron: {
+    marginLeft: 'auto',
+    transition: 'transform 0.3s ease',
+    color: '#3b82f6',
+    background: 'rgba(59, 130, 246, 0.1)',
+    borderRadius: '4px',
+    padding: '2px'
+  },
+  dropdownChevronOpen: {
+    transform: 'rotate(180deg)'
+  },
+  dropdownContent: {
+    overflow: 'hidden',
+    transition: 'max-height 0.3s ease, opacity 0.3s ease',
+    paddingLeft: '1rem',
+    background: 'rgba(15, 23, 42, 0.3)',
+    borderRadius: '0 0 8px 8px',
+    margin: '0 0.5rem 0.5rem 0.5rem',
+    borderLeft: '2px solid rgba(59, 130, 246, 0.3)'
+  },
+  dropdownContentClosed: {
+    maxHeight: '0',
+    opacity: '0'
+  },
+  dropdownContentOpen: {
+    maxHeight: '200px',
+    opacity: '1'
+  }
+};
 
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const location = useLocation();
   const [hoveredItem, setHoveredItem] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
+  const [mohDropdownOpen, setMohDropdownOpen] = useState(false);
+  const [hoveredDropdown, setHoveredDropdown] = useState(null);
 
-  const allMenuItems = [
+  // Core menu items (available to all roles)
+  const coreMenuItems = [
     {
       id: 'dashboard',
       label: 'Dashboard',
@@ -21,7 +106,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     {
       id: 'today',
       label: 'Today',
-      icon: Home,
+      icon: Activity,
       path: '/today',
       badge: null,
       roles: ['gorush', 'jpmc', 'moh']
@@ -36,20 +121,38 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     {
       id: 'orders',
       label: 'All Orders',
-      icon: Package,
+      icon: ClipboardList,
       path: '/orders',
       roles: ['gorush', 'jpmc', 'moh']
     },
     {
       id: 'collection',
       label: 'Collection Dates',
-      icon: Package,
+      icon: Calendar,
       path: '/collection',
       roles: ['gorush', 'jpmc', 'moh']
-    },
+    }
   ];
 
-  // Updated bottom menu items - removed path and action for logout
+  // MOH specific menu items
+  const mohMenuItems = [
+    {
+      id: 'moh',
+      label: 'MOH Orders',
+      icon: Pill,
+      path: '/mohorders',
+      roles: ['gorush']
+    },
+    {
+      id: 'manifestviewer',
+      label: 'MOH Forms',
+      icon: FileText,
+      path: '/manifestviewer',
+      roles: ['gorush']
+    }
+  ];
+
+  // Bottom menu items
   const bottomMenuItems = [
     {
       id: 'logout',
@@ -87,7 +190,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   }, []);
 
   // Filter menu items based on user role
-  const menuItems = userRole ? allMenuItems.filter(item => 
+  const filteredCoreMenuItems = userRole ? coreMenuItems.filter(item => 
+    item.roles.includes(userRole)
+  ) : [];
+
+  const filteredMohMenuItems = userRole ? mohMenuItems.filter(item => 
     item.roles.includes(userRole)
   ) : [];
 
@@ -97,11 +204,26 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
 
   // Debug logs
   console.log('Current userRole:', userRole);
-  console.log('Filtered menu items count:', menuItems.length);
-  console.log('Menu items:', menuItems.map(item => item.label));
+  console.log('Filtered core menu items count:', filteredCoreMenuItems.length);
+  console.log('Filtered MOH menu items count:', filteredMohMenuItems.length);
 
   if (isLoading) {
-    return <div className="sidebar-loading">Loading...</div>;
+    return (
+      <div className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+        <div className="sidebar-header">
+          <div style={{ 
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: '#94a3b8',
+            fontSize: '14px'
+          }}>
+            <div style={styles.loadingSpinner}></div>
+            Loading...
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // If no valid role, show minimal sidebar
@@ -113,37 +235,23 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             <img
               src="/gorushlogo.png"
               alt="Go Rush Logo"
-              style={{ 
-                height: '40px', 
-                width: 'auto', 
-                objectFit: 'contain', 
-                marginTop: '13px', 
-                marginLeft: isCollapsed ? '8px' : '15px',
-                transition: 'margin-left 0.3s ease'
-              }}
+              style={{ height: '40px', width: 'auto', objectFit: 'contain' }}
             />
           </div>
           <button 
             className="toggle-btn"
             onClick={() => setIsCollapsed(!isCollapsed)}
-            style={{
-              minWidth: '40px',
-              minHeight: '40px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              borderRadius: '6px',
-              transition: 'background-color 0.2s ease',
-              marginRight: isCollapsed ? '8px' : '16px'
-            }}
           >
-            {isCollapsed ? <Menu size={20} /> : <X size={20} />}
+            {isCollapsed ? <Menu size={16} /> : <X size={16} />}
           </button>
         </div>
-        <div style={{ padding: '1rem', textAlign: 'center', color: '#666' }}>
+        <div className="menu-section" style={{ 
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#94a3b8',
+          fontSize: '14px'
+        }}>
           Please log in to access features
         </div>
       </div>
@@ -169,220 +277,276 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const getRoleDisplayName = () => {
     switch(userRole) {
       case 'jpmc':
-        return 'JPMC Access';
+        return 'JPMC Portal';
       case 'moh':
-        return 'MOH Access';
+        return 'MOH Portal';
       case 'gorush':
-        return 'Go Rush Access';
+        return 'Go Rush Admin';
       default:
-        return 'Unknown Access';
+        return 'Portal Access';
     }
   };
 
-  // Get role styling
-  const getRoleStyle = () => {
-    switch(userRole) {
-      case 'jpmc':
-        return {
-          backgroundColor: '#fef3c7',
-          color: '#92400e'
-        };
-      case 'moh':
-        return {
-          backgroundColor: '#ecfdf5',
-          color: '#065f46'
-        };
-      case 'gorush':
-        return {
-          backgroundColor: '#dbeafe',
-          color: '#1e40af'
-        };
-      default:
-        return {
-          backgroundColor: '#f3f4f6',
-          color: '#374151'
-        };
+  // Handle sidebar hover for collapsed state
+  const handleSidebarMouseEnter = () => {
+    if (isCollapsed) {
+      setIsHovered(true);
     }
   };
+
+  const handleSidebarMouseLeave = () => {
+    if (isCollapsed) {
+      setIsHovered(false);
+    }
+  };
+
+  // Render menu section
+  const renderMenuSection = (items, title = null) => {
+    if (items.length === 0) return null;
+
+    return (
+      <div className="menu">
+        {items.map((item) => {
+          const Icon = item.icon;
+          const isActive = location.pathname.includes(item.path);
+          const isItemHovered = hoveredItem === item.id;
+          
+          return (
+            <Link
+              to={item.path}
+              key={item.id}
+              className={`menu-item ${isActive ? 'active' : ''} ${isItemHovered ? 'hovered' : ''}`}
+              onMouseEnter={() => setHoveredItem(item.id)}
+              onMouseLeave={() => setHoveredItem(null)}
+              title={item.label}
+            >
+              <div className="menu-item-content">
+                <div className="icon-wrapper">
+                  <Icon 
+                    size={18} 
+                    style={isActive ? styles.iconActive : styles.iconDefault} 
+                  />
+                </div>
+                <span className="label">{item.label}</span>
+                <div className="menu-item-end">
+                  {item.badge && (
+                    <span className="badge">{item.badge}</span>
+                  )}
+                  <ChevronRight size={12} className="chevron" />
+                </div>
+              </div>
+              {isActive && <div className="active-indicator"></div>}
+              {isItemHovered && !isActive && <div className="hover-indicator"></div>}
+            </Link>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // Render MOH dropdown section
+  const renderMohDropdown = (items) => {
+    if (items.length === 0) return null;
+
+    const isDropdownHovered = hoveredDropdown === 'moh';
+
+    return (
+      <div className="menu">
+        {/* Dropdown Header */}
+        <div
+          style={{
+            ...styles.dropdownHeader,
+            ...(isDropdownHovered ? styles.dropdownHeaderHovered : {}),
+            ...(mohDropdownOpen ? styles.dropdownHeaderOpen : {})
+          }}
+          onClick={() => setMohDropdownOpen(!mohDropdownOpen)}
+          onMouseEnter={() => setHoveredDropdown('moh')}
+          onMouseLeave={() => setHoveredDropdown(null)}
+          title={isCollapsed && !isHovered ? 'MOH Services' : ''}
+        >
+          {/* Subtle background gradient effect */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(90deg, rgba(59, 130, 246, 0.05), transparent)',
+            opacity: isDropdownHovered ? 1 : 0,
+            transition: 'opacity 0.2s ease'
+          }} />
+          
+          <Building2 size={18} style={styles.dropdownIcon} />
+          {(!isCollapsed || isHovered) && (
+            <>
+              <span style={{ position: 'relative', zIndex: 1 }}>
+                MOH Services
+                <span style={{
+                  marginLeft: '8px',
+                  fontSize: '0.7rem',
+                  opacity: 0.7,
+                  fontWeight: '400'
+                }}>
+                  ({items.length})
+                </span>
+              </span>
+              <ChevronDown 
+                size={16} 
+                style={{
+                  ...styles.dropdownChevron,
+                  ...(mohDropdownOpen ? styles.dropdownChevronOpen : {}),
+                  position: 'relative',
+                  zIndex: 1
+                }}
+              />
+            </>
+          )}
+        </div>
+
+        {/* Dropdown Content */}
+        {(!isCollapsed || isHovered) && (
+          <div
+            style={{
+              ...styles.dropdownContent,
+              ...(mohDropdownOpen ? styles.dropdownContentOpen : styles.dropdownContentClosed)
+            }}
+          >
+            {mohDropdownOpen && items.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname.includes(item.path);
+              const isItemHovered = hoveredItem === item.id;
+              
+              return (
+                <Link
+                  to={item.path}
+                  key={item.id}
+                  className={`menu-item ${isActive ? 'active' : ''} ${isItemHovered ? 'hovered' : ''}`}
+                  onMouseEnter={() => setHoveredItem(item.id)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  title={item.label}
+                  style={{ 
+                    marginBottom: '0.25rem',
+                    background: 'rgba(30, 41, 59, 0.3)',
+                    borderRadius: '6px'
+                  }}
+                >
+                  <div className="menu-item-content" style={{ padding: '0.6rem 0.8rem' }}>
+                    <div className="icon-wrapper" style={{ marginRight: '10px' }}>
+                      <Icon 
+                        size={16} 
+                        style={isActive ? styles.iconActive : styles.iconDefault} 
+                      />
+                    </div>
+                    <span className="label" style={{ fontSize: '0.85rem' }}>{item.label}</span>
+                    <div className="menu-item-end">
+                      {item.badge && (
+                        <span className="badge">{item.badge}</span>
+                      )}
+                      <ChevronRight size={10} className="chevron" />
+                    </div>
+                  </div>
+                  {isActive && <div className="active-indicator"></div>}
+                  {isItemHovered && !isActive && <div className="hover-indicator"></div>}
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const sidebarClassName = `sidebar ${isCollapsed ? 'collapsed' : ''} ${isHovered ? 'hovered' : ''}`;
 
   return (
-    <div className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+    <div 
+      className={sidebarClassName}
+      data-role={userRole}
+      onMouseEnter={handleSidebarMouseEnter}
+      onMouseLeave={handleSidebarMouseLeave}
+    >
       {/* Header */}
       <div className="sidebar-header">
         <div className="brand">
-          <div>
-            <img
-              src="/gorushlogo.png"
-              alt="Go Rush Logo"
-              style={{ 
-                height: '40px', 
-                width: 'auto', 
-                objectFit: 'contain', 
-                marginTop: '13px', 
-                marginLeft: isCollapsed ? '8px' : '15px',
-                transition: 'margin-left 0.3s ease'
-              }}
-            />
-          </div>
-          {!isCollapsed && (
-            <div className="brand-text">
-              <span>
-                {userRole === 'jpmc' ? '' : ''}
-              </span>
-            </div>
-          )}
+          <img
+            src="/gorushlogo.png"
+            alt="Go Rush Logo"
+            style={{ height: '40px', width: 'auto', objectFit: 'contain' }}
+          />
         </div>
 
         <button 
           className="toggle-btn"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          style={{
-            minWidth: '40px',
-            minHeight: '40px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            borderRadius: '6px',
-            transition: 'background-color 0.2s ease',
-            marginRight: isCollapsed ? '8px' : '16px'
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = 'transparent';
-          }}
         >
-          {isCollapsed ? <Menu size={20} /> : <X size={20} />}
+          {isCollapsed ? <Menu size={18} /> : <X size={18} />}
         </button>
       </div>
 
       {/* User Role Indicator */}
-      {!isCollapsed && (
-        <div className="user-role-indicator" style={{
-          padding: '0.5rem 1rem',
-          margin: '0.5rem',
-          borderRadius: '6px',
-          fontSize: '0.75rem',
-          fontWeight: '500',
-          textAlign: 'center',
-          ...getRoleStyle()
-        }}>
-          {getRoleDisplayName()}
-        </div>
-      )}
+      <div className="user-role-indicator">
+        <Building2 size={14} style={{ marginRight: '8px' }} />
+        {getRoleDisplayName()}
+      </div>
 
-      {/* Main Menu */}
+      {/* Main Content */}
       <div className="menu-section">
-        <nav className="menu">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname.includes(item.path);
-            const isHovered = hoveredItem === item.id;
-            
-            return (
-              <Link
-                to={item.path}
-                key={item.id}
-                className={`menu-item ${isActive ? 'active' : ''} ${isHovered ? 'hovered' : ''}`}
-                onMouseEnter={() => setHoveredItem(item.id)}
-                onMouseLeave={() => setHoveredItem(null)}
-                title={isCollapsed ? item.label : ''} // Show tooltip when collapsed
-              >
-                <div className="menu-item-content">
-                  <div className="icon-wrapper">
-                    <Icon size={20} />
-                  </div>
-                  {!isCollapsed && (
-                    <>
-                      <span className="label">{item.label}</span>
-                      <div className="menu-item-end">
-                        {item.badge && (
-                          <span className="badge">{item.badge}</span>
-                        )}
-                        <ChevronRight size={14} className="chevron" />
-                      </div>
-                    </>
-                  )}
-                </div>
-                {isActive && <div className="active-indicator"></div>}
-              </Link>
-            );
-          })}
-        </nav>
+        {/* Core Menu Items */}
+        {renderMenuSection(filteredCoreMenuItems, 'General')}
+        
+        {/* MOH Specific Items Dropdown */}
+        {renderMohDropdown(filteredMohMenuItems)}
       </div>
 
       {/* Bottom Menu */}
       <div className="bottom-menu">
         {filteredBottomMenuItems.map((item) => {
           const Icon = item.icon;
-          const isHovered = hoveredItem === item.id;
+          const isItemHovered = hoveredItem === item.id;
           
-          // Only render logout as a button, not a link
           if (item.action === 'logout') {
             return (
-              <button
+              <div
                 key={item.id}
-                className={`menu-item ${isHovered ? 'hovered' : ''}`}
+                className={`menu-item ${isItemHovered ? 'hovered' : ''}`}
                 onMouseEnter={() => setHoveredItem(item.id)}
                 onMouseLeave={() => setHoveredItem(null)}
                 onClick={handleLogout}
-                title={isCollapsed ? item.label : ''} // Show tooltip when collapsed
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  width: '100%',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  padding: '0.75rem 1rem',
-                  borderRadius: '6px',
-                  color: 'inherit',
-                  fontSize: 'inherit'
-                }}
+                title={item.label}
+                style={{ cursor: 'pointer' }}
               >
                 <div className="menu-item-content">
                   <div className="icon-wrapper">
-                    <Icon size={20} />
+                    <Icon size={18} style={{ color: '#ef4444' }} />
                   </div>
-                  {!isCollapsed && <span className="label">{item.label}</span>}
+                  <span className="label" style={{ color: '#ef4444' }}>{item.label}</span>
                 </div>
-              </button>
+                {isItemHovered && <div className="hover-indicator"></div>}
+              </div>
             );
           }
           
-          // For other items (if any), render as links
-          return (
-            <Link
-              to={item.path}
-              key={item.id}
-              className={`menu-item ${isHovered ? 'hovered' : ''}`}
-              onMouseEnter={() => setHoveredItem(item.id)}
-              onMouseLeave={() => setHoveredItem(null)}
-              title={isCollapsed ? item.label : ''} // Show tooltip when collapsed
-            >
-              <div className="menu-item-content">
-                <div className="icon-wrapper">
-                  <Icon size={20} />
-                </div>
-                {!isCollapsed && <span className="label">{item.label}</span>}
-              </div>
-            </Link>
-          );
+          return null;
         })}
       </div>
 
       {/* Footer */}
-      {!isCollapsed && (
-        <div className="sidebar-footer">
-          <div className="footer-content">
-            <div className="version">v1.0.0</div>
-            <div className="copyright">© 2025 {userRole === 'jpmc' ? 'JPMC' : userRole === 'moh' ? 'MOH' : 'Go Rush'}</div>
+      <div className="sidebar-footer">
+        <div className="footer-content">
+          <div className="version">Version 1.0.0</div>
+          <div className="copyright">
+            © 2025 {userRole === 'jpmc' ? 'JPMC' : userRole === 'moh' ? 'Ministry of Health' : 'Go Rush Delivery'}
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Add loading animation styles */}
+      <style jsx="true">{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };

@@ -8,6 +8,8 @@ import Today from './pages/Today';
 import CollectionDatesPage from './pages/Collection';
 import OrderDetails from './pages/OrderDetails';
 import PasswordModal from './components/PasswordModal';
+import MohOrdersDashboard from './pages/MOH';
+import ManifestViewer from './pages/Manifest';
 
 function App() {
   const [userRole, setUserRole] = useState(null);
@@ -16,7 +18,7 @@ function App() {
    useEffect(() => {
     // Ping backend every 10 minutes (600,000ms)
     const interval = setInterval(() => {
-      fetch('https://grpharmacyappserver.onrender.com/api/health')
+      fetch('http://localhost:5050/api/health')
         .then(() => console.log('Backend pinged successfully'))
         .catch(err => console.error('Ping failed:', err));
     }, 600_000); // 10 minutes
@@ -83,6 +85,11 @@ function App() {
               <AllCustomersPage />
             </ProtectedRoute>
           } />
+          <Route path="mohorders" element={
+            <ProtectedRoute allowedRoles={['gorush']}>
+              <MohOrdersDashboard />
+            </ProtectedRoute>
+          } />
           <Route path="today" element={
             <ProtectedRoute allowedRoles={['gorush', 'jpmc', 'moh']}>
               <Today />
@@ -91,6 +98,11 @@ function App() {
           <Route path="collection" element={
             <ProtectedRoute allowedRoles={['gorush', 'jpmc', 'moh']}>
               <CollectionDatesPage />
+            </ProtectedRoute>
+          } />
+          <Route path="manifestviewer" element={
+            <ProtectedRoute allowedRoles={['gorush']}>
+              <ManifestViewer />
             </ProtectedRoute>
           } />
           <Route path="/orders/:id" element={

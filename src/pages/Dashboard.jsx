@@ -37,13 +37,13 @@ const Dashboard = () => {
     setError(null);
     try {
       const [ordersRes, customersRes] = await Promise.all([
-        fetch('https://grpharmacyappserver.onrender.com/api/orders', {
+        fetch('http://localhost:5050/api/orders', {
           headers: {
             'Content-Type': 'application/json',
             'X-User-Role': userRole || 'jpmc'
           }
         }),
-        fetch('https://grpharmacyappserver.onrender.com/api/customers', {
+        fetch('http://localhost:5050/api/customers', {
           headers: {
             'Content-Type': 'application/json',
             'X-User-Role': userRole || 'jpmc'
@@ -75,7 +75,7 @@ const Dashboard = () => {
   const fetchCustomerOrders = async (patientNumber) => {
     setLoadingOrders(true);
     try {
-      const response = await fetch(`https://grpharmacyappserver.onrender.com/api/customers/${patientNumber}/orders`, {
+      const response = await fetch(`http://localhost:5050/api/customers/${patientNumber}/orders`, {
         headers: {
           'Content-Type': 'application/json',
           'X-User-Role': userRole || 'jpmc'
@@ -447,59 +447,113 @@ const Dashboard = () => {
               )}
             </div>
           </div>
-          {/* Tracking Numbers with Logs */}
-<div style={styles.logsTableContainer}>
-  <h3 style={styles.logsTableTitle}>Recent Activity Logs</h3>
-  <p style={styles.logsTableSubtitle}>Tracking numbers with recent system updates</p>
-  
-  <div style={{ overflowX: 'auto' }}>
-    <table style={styles.logsTable}>
-      <thead style={styles.tableHeader}>
-        <tr>
-          <th style={styles.tableHeaderCell}>Tracking #</th>
-          <th style={styles.tableHeaderCell}>Last Update</th>
-          <th style={styles.tableHeaderCell}>Log Count</th>
-          <th style={styles.tableHeaderCell}>Recent Note</th>
-        </tr>
-      </thead>
-      <tbody>
-        {orders
-          .filter(order => order.logs && order.logs.length > 0)
-          .sort((a, b) => new Date(b.logs[b.logs.length - 1].createdAt) - new Date(a.logs[a.logs.length - 1].createdAt))
-          .slice(0, 5)
-          .map(order => (
-            <tr 
-              key={order._id}
-              style={styles.tableRow}
-              onMouseEnter={(e) => e.target.closest('tr').style.backgroundColor = '#f9fafb'}
-              onMouseLeave={(e) => e.target.closest('tr').style.backgroundColor = 'transparent'}
-            >
-              <td style={styles.tableCell}>
-                <span 
-                  style={styles.trackingNumber}
-                  onClick={() => handleTrackingNumberClick(order._id)}
-                >
-                  {order.doTrackingNumber || 'N/A'}
-                </span>
-              </td>
-              <td style={styles.tableCell}>
-                {order.logs[order.logs.length - 1].createdAt 
-                  ? new Date(order.logs[order.logs.length - 1].createdAt).toLocaleString() 
-                  : 'N/A'}
-              </td>
-              <td style={styles.tableCell}>
-                {order.logs.length}
-              </td>
-              <td style={styles.tableCell}>
-                {order.logs[order.logs.length - 1].note.substring(0, 50)}
-                {order.logs[order.logs.length - 1].note.length > 50 ? '...' : ''}
-              </td>
-            </tr>
-          ))}
-      </tbody>
-    </table>
-  </div>
-</div>
+          
+          {/* Tracking Numbers with Logs - FILTERED TO EXCLUDE SYSTEM LOGS */}
+          <div style={styles.logsTableContainer}>
+            <h3 style={styles.logsTableTitle}>Recent User Activity Logs</h3>
+            <p style={styles.logsTableSubtitle}>Tracking numbers with recent user updates (excluding system logs)</p>
+            
+            <div style={{ overflowX: 'auto' }}>
+              <table style={styles.logsTable}>
+                <thead style={styles.tableHeader}>
+                  <tr>
+                    <th style={styles.tableHeaderCell}>Tracking #</th>
+                    <th style={styles.tableHeaderCell}>Last Update</th>
+                    <th style={styles.tableHeaderCell}>User Log Count</th>
+                    <th style={styles.tableHeaderCell}>Recent Note</th>
+                    <th style={styles.tableHeaderCell}>Created By</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders
+                    .filter(order => {
+                      // First filter: order must have logs
+                      if (!order.logs || order.logs.length === 0) return false;
+                      
+                      // Second filter: order must have at least one non-system log
+                      const nonSystemLogs = order.logs.filter(log => 
+                        log.createdBy && log.createdBy.toLowerCase() !== 'system'
+                      );
+                      return nonSystemLogs.length > 0;
+                    })
+                    .map(order => {
+                      // Get only non-system logs for this order
+                      const nonSystemLogs = order.logs.filter(log => 
+                        log.createdBy && log.createdBy.toLowerCase() !== 'system'
+                      );
+                      
+                      // Get the most recent non-system log
+                      const mostRecentLog = nonSystemLogs.sort((a, b) => 
+                        new Date(b.createdAt) - new Date(a.createdAt)
+                      )[0];
+                      
+                      return {
+                        ...order,
+                        nonSystemLogs,
+                        mostRecentLog
+                      };
+                    })
+                    .sort((a, b) => new Date(b.mostRecentLog.createdAt) - new Date(a.mostRecentLog.createdAt))
+                    .slice(0, 5)
+                    .map(order => (
+                      <tr 
+                        key={order._id}
+                        style={styles.tableRow}
+                        onMouseEnter={(e) => e.target.closest('tr').style.backgroundColor = '#f9fafb'}
+                        onMouseLeave={(e) => e.target.closest('tr').style.backgroundColor = 'transparent'}
+                      >
+                        <td style={styles.tableCell}>
+                          <span 
+                            style={styles.trackingNumber}
+                            onClick={() => handleTrackingNumberClick(order._id)}
+                          >
+                            {order.doTrackingNumber || 'N/A'}
+                          </span>
+                        </td>
+                        <td style={styles.tableCell}>
+                          {order.mostRecentLog.createdAt 
+                            ? new Date(order.mostRecentLog.createdAt).toLocaleString() 
+                            : 'N/A'}
+                        </td>
+                        <td style={styles.tableCell}>
+                          {order.nonSystemLogs.length}
+                        </td>
+                        <td style={styles.tableCell}>
+                          {order.mostRecentLog.note ? (
+                            <>
+                              {order.mostRecentLog.note.substring(0, 50)}
+                              {order.mostRecentLog.note.length > 50 ? '...' : ''}
+                            </>
+                          ) : 'N/A'}
+                        </td>
+                        <td style={styles.tableCell}>
+                          <span style={{ 
+                            ...styles.createdByBadge,
+                            backgroundColor: order.mostRecentLog.createdBy === 'system' ? '#fee2e2' : '#dbeafe',
+                            color: order.mostRecentLog.createdBy === 'system' ? '#dc2626' : '#2563eb'
+                          }}>
+                            {order.mostRecentLog.createdBy || 'Unknown'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+            
+            {orders.filter(order => {
+              if (!order.logs || order.logs.length === 0) return false;
+              const nonSystemLogs = order.logs.filter(log => 
+                log.createdBy && log.createdBy.toLowerCase() !== 'system'
+              );
+              return nonSystemLogs.length > 0;
+            }).length === 0 && (
+              <div style={styles.emptyState}>
+                <TrendingUp style={styles.emptyIcon} />
+                <p>No user activity logs found.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

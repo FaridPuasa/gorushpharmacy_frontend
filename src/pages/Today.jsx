@@ -15,9 +15,11 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import dayjs from 'dayjs';
 
 const Today = () => {
   const [orders, setOrders] = useState([]);
+  const [productFilter, setProductFilter] = useState('all');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [tempSelectedDate, setTempSelectedDate] = useState(new Date());
   const [filteredOrders, setFilteredOrders] = useState([]);
@@ -55,6 +57,15 @@ const openDatePicker = () => {
   setShowDatePicker(true);
 };
   
+const handleClick = () => {
+  // Format today's date as DD-MM-YYYY
+  const today = dayjs().format('DD-MM-YYYY');
+  
+  // Navigate to /mohorders with today's date only
+  navigate(`/mohorders?date=${today}`);
+};
+
+
 
   // Navigation between dates
   const navigateToPreviousDay = () => {
@@ -91,7 +102,7 @@ const openDatePicker = () => {
     try {
       const currentRole = userRole || sessionStorage.getItem('userRole') || 'jpmc';
       const promises = selectedOrders.map(orderId => 
-        fetch(`https://grpharmacyappserver.onrender.com/api/orders/${orderId}/collection-date`, {
+        fetch(`http://localhost:5050/api/orders/${orderId}/collection-date`, {
           method: 'PUT',
           headers: { 
             'Content-Type': 'application/json',
@@ -145,9 +156,9 @@ const openDatePicker = () => {
     }
   }, [userRole, roleInitialized, currentDate]);
 
-  useEffect(() => {
-    filterOrders();
-  }, [orders, searchTerm, statusFilter]);
+useEffect(() => {
+  filterOrders();
+}, [orders, searchTerm, statusFilter, productFilter]);
 
   const getUserRole = () => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -177,7 +188,7 @@ const openDatePicker = () => {
     try {
       const currentRole = userRole || sessionStorage.getItem('userRole') || 'jpmc';
       
-      const response = await fetch('https://grpharmacyappserver.onrender.com/api/orders', {
+      const response = await fetch('http://localhost:5050/api/orders', {
         headers: {
           'Content-Type': 'application/json',
           'X-User-Role': currentRole
@@ -236,26 +247,33 @@ const openDatePicker = () => {
     }
   };
 
-  const filterOrders = () => {
-    let filtered = [...orders];
+const filterOrders = () => {
+  let filtered = [...orders];
 
-    if (searchTerm) {
-      filtered = filtered.filter(order =>
-        order.receiverName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.patientNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.doTrackingNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.medicationName?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
+  // Apply product filter
+  if (productFilter !== 'all') {
+    filtered = filtered.filter(order => order.product === productFilter);
+  }
 
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(order => 
-        order.goRushStatus?.toLowerCase() === statusFilter.toLowerCase()
-      );
-    }
+  // Apply search filter
+  if (searchTerm) {
+    filtered = filtered.filter(order =>
+      order.receiverName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.patientNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.doTrackingNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.medicationName?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }
 
-    setFilteredOrders(filtered);
-  };
+  // Apply status filter
+  if (statusFilter !== 'all') {
+    filtered = filtered.filter(order => 
+      order.goRushStatus?.toLowerCase() === statusFilter.toLowerCase()
+    );
+  }
+
+  setFilteredOrders(filtered);
+};
 
   const getStatusCounts = () => {
     const counts = {
@@ -280,7 +298,7 @@ const openDatePicker = () => {
       const currentRole = userRole || sessionStorage.getItem('userRole') || 'jpmc';
       
       const response = await fetch(
-        `https://grpharmacyappserver.onrender.com/api/orders/${orderId}/collection-date`,
+        `http://localhost:5050/api/orders/${orderId}/collection-date`,
         {
           method: 'PUT',
           headers: { 
@@ -436,6 +454,24 @@ const openDatePicker = () => {
       </h1>
     </div>
     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+<button 
+      onClick={handleClick}
+      style={{
+        padding: '8px 16px',
+        backgroundColor: '#1890ff',
+        color: 'white',
+        border: 'none',
+        borderRadius: '6px',
+        fontSize: '14px',
+        fontWeight: '500',
+        cursor: 'pointer',
+        transition: 'background-color 0.2s'
+      }}
+      onMouseEnter={(e) => e.target.style.backgroundColor = '#1677ff'}
+      onMouseLeave={(e) => e.target.style.backgroundColor = '#1890ff'}
+    >
+      Create MOH Forms
+    </button>
       <button
         onClick={navigateToToday}
         style={{
@@ -450,6 +486,7 @@ const openDatePicker = () => {
       >
         Today
       </button>
+      
       
       <button
         onClick={fetchOrdersForDate}
@@ -610,6 +647,28 @@ const openDatePicker = () => {
                     }}
                   />
                 </div>
+                    <div style={{ minWidth: '200px' }}>
+      <label style={{ display: 'block', marginTop: 10, fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
+        Product Type
+      </label>
+      <select
+        value={productFilter}
+        onChange={(e) => setProductFilter(e.target.value)}
+        style={{
+          width: '100%',
+          padding: '10px',
+          border: '1px solid #d1d5db',
+          borderRadius: '6px',
+          fontSize: '14px',
+          boxSizing: 'border-box',
+          backgroundColor: 'white'
+        }}
+      >
+        <option value="all">All Products</option>
+        <option value="pharmacyjpmc">JPMC Pharmacy</option>
+        <option value="pharmacymoh">MOH Pharmacy</option>
+      </select>
+    </div>
               </div>
             </div>
           )}

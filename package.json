@@ -9,7 +9,9 @@
     "dependencies": {
         "@clerk/clerk-react": "^5.32.2",
         "@tailwindcss/vite": "^4.1.10",
-        "axios": "^1.10.0",
+        "antd": "^5.26.6",
+        "axios": "^1.11.0",
+        "dayjs": "^1.11.13",
         "file-saver": "^2.0.5",
         "jspdf": "^3.0.1",
         "jspdf-autotable": "^5.0.2",

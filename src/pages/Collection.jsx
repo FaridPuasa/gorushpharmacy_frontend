@@ -1,20 +1,626 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Package, ChevronRight, ExternalLink, RefreshCw, Check, Clock, User, MapPin, Phone, X, CreditCard, FileText, Building, DollarSign, Users, Trash2, Edit3, Save, XCircle, Download } from 'lucide-react';
+import { 
+  Calendar, Package, ChevronRight, ExternalLink, RefreshCw, Check, 
+  Clock, User, MapPin, Phone, X, CreditCard, FileText, 
+  Building, DollarSign, Users as UsersIcon, Trash2, 
+  Edit3, Save, XCircle, Download, Filter, Plus, Minus,
+  ChevronDown, ChevronUp
+} from 'lucide-react';
 import { format, parseISO, isToday, isTomorrow } from 'date-fns';
 import PasswordModal from '../components/PasswordModal';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+
+const styles = {
+  container: {
+    maxWidth: '1400px',
+    margin: '0 auto',
+    padding: '24px',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+    backgroundColor: '#f9fafb',
+    minHeight: '100vh'
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '24px',
+    paddingBottom: '16px',
+    borderBottom: '1px solid #e5e7eb'
+  },
+  title: {
+    fontSize: '28px',
+    margin: 0,
+    color: '#111827',
+    fontWeight: '600'
+  },
+  userRoleBadge: {
+    padding: '8px 16px',
+    borderRadius: '20px',
+    backgroundColor: '#3b82f6',
+    color: 'white',
+    fontSize: '14px',
+    fontWeight: '500'
+  },
+  selectPrompt: {
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    padding: '40px',
+    textAlign: 'center',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    marginBottom: '24px'
+  },
+  promptText: {
+    fontSize: '18px',
+    color: '#6b7280',
+    margin: 0
+  },
+  dateSelectorContainer: {
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    padding: '16px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    marginBottom: '24px',
+    overflowX: 'auto'
+  },
+  dateSelector: {
+    display: 'flex',
+    gap: '12px',
+    paddingBottom: '8px'
+  },
+  dateButton: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '16px 24px',
+    borderRadius: '8px',
+    background: '#f3f4f6',
+    border: 'none',
+    cursor: 'pointer',
+    minWidth: '140px',
+    transition: 'all 0.2s',
+    '&:hover': {
+      transform: 'translateY(-2px)'
+    }
+  },
+  activeDateButton: {
+    background: '#3b82f6',
+    color: 'white',
+    boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.5)'
+  },
+  noDateButton: {
+    background: '#f59e0b',
+    color: 'white',
+    '&.active': {
+      boxShadow: '0 4px 6px -1px rgba(245, 158, 11, 0.5)'
+    }
+  },
+  dateLabel: {
+    fontWeight: '600',
+    marginBottom: '4px',
+    fontSize: '14px'
+  },
+  orderCount: {
+    fontSize: '12px',
+    opacity: '0.9'
+  },
+  ordersContainer: {
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    padding: '24px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+  },
+  controlsContainer: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '24px',
+    flexWrap: 'wrap',
+    gap: '16px'
+  },
+  dateTitle: {
+    fontSize: '20px',
+    margin: 0,
+    color: '#111827',
+    fontWeight: '600'
+  },
+  actionsContainer: {
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'center'
+  },
+  filterButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 16px',
+    backgroundColor: '#f3f4f6',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '500',
+    transition: 'all 0.2s',
+    '&:hover': {
+      backgroundColor: '#e5e7eb'
+    }
+  },
+  exportButtons: {
+    display: 'flex',
+    gap: '8px'
+  },
+  exportButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 16px',
+    backgroundColor: '#10b981',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '500',
+    transition: 'all 0.2s',
+    '&:hover': {
+      backgroundColor: '#059669'
+    }
+  },
+  filterPanel: {
+    backgroundColor: '#f9fafb',
+    borderRadius: '8px',
+    padding: '16px',
+    marginBottom: '24px',
+    border: '1px solid #e5e7eb',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+    gap: '16px'
+  },
+  filterGroup: {
+    marginBottom: '0'
+  },
+  filterLabel: {
+    display: 'block',
+    marginBottom: '8px',
+    fontSize: '14px',
+    fontWeight: '500',
+    color: '#374151'
+  },
+  filterSelect: {
+    width: '100%',
+    padding: '8px 12px',
+    borderRadius: '6px',
+    border: '1px solid #d1d5db',
+    backgroundColor: 'white',
+    fontSize: '14px'
+  },
+  searchInput: {
+    width: '100%',
+    padding: '8px 12px',
+    borderRadius: '6px',
+    border: '1px solid #d1d5db',
+    backgroundColor: 'white',
+    fontSize: '14px'
+  },
+  bulkActions: {
+    backgroundColor: '#f0f9ff',
+    borderRadius: '8px',
+    padding: '12px 16px',
+    marginBottom: '16px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    border: '1px solid #bae6fd'
+  },
+  bulkSelectionInfo: {
+    fontWeight: '500',
+    color: '#0369a1'
+  },
+  bulkStatusActions: {
+    display: 'flex',
+    gap: '8px'
+  },
+  bulkStatusSelect: {
+    padding: '8px 12px',
+    borderRadius: '6px',
+    border: '1px solid #d1d5db',
+    backgroundColor: 'white',
+    fontSize: '14px'
+  },
+  clearSelectionButton: {
+    padding: '8px 12px',
+    backgroundColor: '#f3f4f6',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    '&:hover': {
+      backgroundColor: '#e5e7eb'
+    }
+  },
+  selectAllContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '16px',
+    padding: '8px',
+    backgroundColor: '#f9fafb',
+    borderRadius: '6px'
+  },
+  groupHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '12px 16px',
+    backgroundColor: '#f3f4f6',
+    borderRadius: '8px',
+    marginBottom: '12px',
+    cursor: 'pointer'
+  },
+  groupTitle: {
+    margin: 0,
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#111827'
+  },
+  groupToggle: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '24px',
+    height: '24px',
+    backgroundColor: '#e5e7eb',
+    borderRadius: '4px'
+  },
+  ordersList: {
+    display: 'grid',
+    gap: '16px',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))'
+  },
+  orderCard: {
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    padding: '16px',
+    transition: 'all 0.2s',
+    backgroundColor: 'white',
+    '&:hover': {
+      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+    }
+  },
+  selectedOrderCard: {
+    borderColor: '#3b82f6',
+    backgroundColor: '#f0f7ff'
+  },
+  orderHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '12px',
+    flexWrap: 'wrap',
+    gap: '8px'
+  },
+  orderTime: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontSize: '14px',
+    color: '#6b7280'
+  },
+  productBadge: {
+    padding: '2px 8px',
+    borderRadius: '12px',
+    fontSize: '12px',
+    fontWeight: '500',
+    textTransform: 'uppercase'
+  },
+  statusBadge: {
+    padding: '4px 10px',
+    borderRadius: '20px',
+    fontSize: '12px',
+    fontWeight: '500',
+    textTransform: 'capitalize'
+  },
+  statusPending: {
+    background: '#fef3c7',
+    color: '#92400e'
+  },
+  statusReady: {
+    background: '#dbeafe',
+    color: '#1e40af'
+  },
+  statusCollected: {
+    background: '#dcfce7',
+    color: '#166534'
+  },
+  statusCancelled: {
+    background: '#fee2e2',
+    color: '#991b1b'
+  },
+  orderDetails: {
+    marginBottom: '12px'
+  },
+  customerInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '8px',
+    fontSize: '14px',
+    color: '#374151'
+  },
+  patientNumber: {
+    backgroundColor: '#f3f4f6',
+    padding: '2px 6px',
+    borderRadius: '4px',
+    fontFamily: 'monospace',
+    fontSize: '13px'
+  },
+  orderFooter: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '8px'
+  },
+  trackingNumber: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontFamily: 'monospace',
+    backgroundColor: '#f3f4f6',
+    padding: '4px 8px',
+    borderRadius: '4px',
+    fontSize: '13px'
+  },
+  actions: {
+    display: 'flex',
+    gap: '8px',
+    flexWrap: 'wrap'
+  },
+  statusSelect: {
+    padding: '6px 10px',
+    borderRadius: '4px',
+    border: '1px solid #d1d5db',
+    background: 'white',
+    cursor: 'pointer',
+    fontSize: '14px'
+  },
+  viewButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    backgroundColor: '#3b82f6',
+    color: 'white',
+    border: 'none',
+    padding: '6px 12px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    transition: 'background-color 0.2s'
+  },
+  editButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    backgroundColor: '#10b981',
+    color: 'white',
+    border: 'none',
+    padding: '6px 12px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    transition: 'background-color 0.2s'
+  },
+  deleteButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    backgroundColor: '#ef4444',
+    color: 'white',
+    border: 'none',
+    padding: '6px 12px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    transition: 'background-color 0.2s'
+  },
+  editSection: {
+    backgroundColor: '#f9fafb',
+    padding: '12px',
+    borderRadius: '6px',
+    marginTop: '12px',
+    border: '1px solid #e5e7eb'
+  },
+  dateInput: {
+    padding: '6px 10px',
+    borderRadius: '4px',
+    border: '1px solid #d1d5db',
+    background: 'white',
+    fontSize: '14px',
+    minWidth: '150px',
+    marginTop: '8px'
+  },
+  editActions: {
+    display: 'flex',
+    gap: '8px',
+    marginTop: '12px'
+  },
+  saveButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    backgroundColor: '#059669',
+    color: 'white',
+    border: 'none',
+    padding: '6px 12px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    transition: 'background-color 0.2s'
+  },
+  cancelButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    backgroundColor: '#6b7280',
+    color: 'white',
+    border: 'none',
+    padding: '6px 12px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    transition: 'background-color 0.2s'
+  },
+  emptyState: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '40px',
+    textAlign: 'center'
+  },
+  emptyText: {
+    marginTop: '16px',
+    fontSize: '16px',
+    color: '#6b7280'
+  },
+  loading: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '200px',
+    fontSize: '16px',
+    color: '#666'
+  },
+  popup: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000
+  },
+  popupContent: {
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    padding: '24px',
+    width: '90%',
+    maxWidth: '800px',
+    maxHeight: '90vh',
+    overflowY: 'auto',
+    position: 'relative'
+  },
+  popupHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: '20px'
+  },
+  popupTitle: {
+    fontSize: '24px',
+    fontWeight: '600',
+    color: '#111827',
+    margin: 0
+  },
+  closeButton: {
+    backgroundColor: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    padding: '4px',
+    borderRadius: '4px',
+    color: '#6b7280',
+    '&:hover': {
+      backgroundColor: '#f3f4f6'
+    }
+  },
+  popupSection: {
+    marginBottom: '24px'
+  },
+  sectionTitle: {
+    fontSize: '18px',
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: '16px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+  },
+  infoGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+    gap: '16px'
+  },
+  infoItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px'
+  },
+  infoLabel: {
+    fontSize: '12px',
+    color: '#6b7280',
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px'
+  },
+  infoValue: {
+    fontSize: '14px',
+    color: '#111827',
+    fontWeight: '400'
+  },
+      dateGroupContainer: {
+      marginBottom: '24px',
+      border: '1px solid #e5e7eb',
+      borderRadius: '8px',
+      overflow: 'hidden'
+    },
+    pharmacyTypeGroups: {
+      padding: '0 16px 16px 16px'
+    },
+    pharmacyTypeGroup: {
+      marginTop: '16px',
+      border: '1px solid #e5e7eb',
+      borderRadius: '6px',
+      overflow: 'hidden'
+    },
+    pharmacyTypeHeader: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '12px 16px',
+      backgroundColor: '#f9fafb',
+      cursor: 'pointer',
+      borderBottom: '1px solid #e5e7eb'
+    },
+    pharmacyTypeTitle: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px'
+    },
+    pharmacyTypeBadge: {
+      padding: '4px 12px',
+      borderRadius: '12px',
+      fontSize: '14px',
+      fontWeight: '600',
+      textTransform: 'uppercase'
+    },
+    pharmacyTypeToggle: {
+      color: '#6b7280'
+    }
+};
 
 const CollectionDatesPage = () => {
   const [dates, setDates] = useState([]);
+  const [filteredOrders, setFilteredOrders] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [orders, setOrders] = useState([]);
   const [ordersWithoutDates, setOrdersWithoutDates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
+    const [expandedPharmacyTypes, setExpandedPharmacyTypes] = useState({});
   const [showPopup, setShowPopup] = useState(false);
   const [editingOrderId, setEditingOrderId] = useState(null);
   const [newCollectionDate, setNewCollectionDate] = useState('');
@@ -22,7 +628,19 @@ const CollectionDatesPage = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(true);
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState({});
+  const [showFilters, setShowFilters] = useState(false);
+  const [productFilter, setProductFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const navigate = useNavigate();
+
+    const togglePharmacyType = (dateString, pharmacyType) => {
+    setExpandedPharmacyTypes(prev => ({
+      ...prev,
+      [`${dateString}-${pharmacyType}`]: !prev[`${dateString}-${pharmacyType}`]
+    }));
+  };
 
   useEffect(() => {
     if (userRole) {
@@ -45,16 +663,21 @@ const CollectionDatesPage = () => {
     }
   }, [selectedOrders]);
 
-  const currentOrders = () => {
-    return selectedDate === 'no-date' 
+useEffect(() => {
+  filterOrders(); // Apply filters when search/filter criteria change
+}, [searchTerm, statusFilter, productFilter, orders, ordersWithoutDates, selectedDate]);
+
+const currentOrders = () => {
+  return filteredOrders.length > 0 ? filteredOrders : 
+    (selectedDate === 'no-date' 
       ? Object.values(ordersWithoutDates).flat() 
-      : orders;
-  };
+      : orders);
+};
 
   const fetchCollectionDates = async () => {
     setLoading(true);
     try {
-      const response = await fetch('https://grpharmacyappserver.onrender.com/api/collection-dates', {
+      const response = await fetch('http://localhost:5050/api/collection-dates', {
         headers: {
           'X-User-Role': userRole
         }
@@ -73,7 +696,7 @@ const CollectionDatesPage = () => {
 
   const fetchOrdersWithoutCollectionDates = async () => {
     try {
-      const response = await fetch('https://grpharmacyappserver.onrender.com/api/orders', {
+      const response = await fetch('http://localhost:5050/api/orders', {
         headers: {
           'X-User-Role': userRole
         }
@@ -105,10 +728,67 @@ const CollectionDatesPage = () => {
     }
   };
 
+const renderDateGroup = (dateString, dateOrders) => {
+    const groupedOrders = groupOrdersByPharmacyType(dateOrders);
+    
+    return (
+      <div key={dateString} style={styles.dateGroupContainer}>
+        <div 
+          style={styles.groupHeader}
+          onClick={() => toggleGroup(dateString)}
+        >
+          <h3 style={styles.groupTitle}>
+            Created on: {format(parseISO(dateString), 'EEEE, MMMM d')}
+          </h3>
+          <div style={styles.groupToggle}>
+            {expandedGroups[dateString] ? <Minus size={18} /> : <Plus size={18} />}
+          </div>
+        </div>
+        
+        {expandedGroups[dateString] && (  // Only show if explicitly expanded
+          <div style={styles.pharmacyTypeGroups}>
+            {Object.entries(groupedOrders).map(([pharmacyType, orders]) => (
+              orders.length > 0 && (
+                <div key={`${dateString}-${pharmacyType}`} style={styles.pharmacyTypeGroup}>
+                  <div 
+                    style={styles.pharmacyTypeHeader}
+                    onClick={() => togglePharmacyType(dateString, pharmacyType)}
+                  >
+                    <div style={styles.pharmacyTypeTitle}>
+                      <span style={{
+                        ...styles.pharmacyTypeBadge,
+                        backgroundColor: pharmacyType === 'MOH' ? '#d1fae5' : 
+                                        pharmacyType === 'JPMC' ? '#dbeafe' : '#e5e7eb',
+                        color: pharmacyType === 'MOH' ? '#065f46' : 
+                               pharmacyType === 'JPMC' ? '#1e40af' : '#4b5563'
+                      }}>
+                        {pharmacyType} ({orders.length})
+                      </span>
+                    </div>
+                    <div style={styles.pharmacyTypeToggle}>
+                      {expandedPharmacyTypes[`${dateString}-${pharmacyType}`] ? 
+                        <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                    </div>
+                  </div>
+                  
+                  {expandedPharmacyTypes[`${dateString}-${pharmacyType}`] && (
+                    <div style={styles.ordersList}>
+                      {orders.map(renderOrderCard)}
+                    </div>
+                  )}
+                </div>
+              )
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const fetchOrdersForDate = async (dateString) => {
     try {
       const response = await fetch(
-        `https://grpharmacyappserver.onrender.com/api/orders/collection-dates?date=${dateString}`,
+        `http://localhost:5050/api/orders/collection-dates?date=${dateString}`,
         {
           headers: {
             'X-User-Role': userRole
@@ -126,6 +806,37 @@ const CollectionDatesPage = () => {
     }
   };
 
+const filterOrders = () => {
+  let filtered = selectedDate === 'no-date' 
+    ? Object.values(ordersWithoutDates).flat()
+    : [...orders];
+
+  // Apply product filter
+  if (productFilter !== 'all') {
+    filtered = filtered.filter(order => order.product === productFilter);
+  }
+
+  // Apply search filter
+  if (searchTerm) {
+    filtered = filtered.filter(order =>
+      order.receiverName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.patientNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.doTrackingNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.medicationName?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }
+
+  // Apply status filter
+  if (statusFilter !== 'all') {
+    filtered = filtered.filter(order => 
+      order.goRushStatus?.toLowerCase() === statusFilter.toLowerCase() ||
+      order.pharmacyStatus?.toLowerCase() === statusFilter.toLowerCase()
+    );
+  }
+
+  setFilteredOrders(filtered);
+};
+
   const handleDateChange = (dateString) => {
     setSelectedDate(dateString);
     setEditingOrderId(null);
@@ -141,8 +852,8 @@ const CollectionDatesPage = () => {
     }
 
     const endpoint = statusType === 'pharmacyStatus'
-      ? `https://grpharmacyappserver.onrender.com/api/orders/${orderId}/pharmacy-status`
-      : `https://grpharmacyappserver.onrender.com/api/orders/${orderId}/go-rush-status`;
+      ? `http://localhost:5050/api/orders/${orderId}/pharmacy-status`
+      : `http://localhost:5050/api/orders/${orderId}/go-rush-status`;
 
     try {
       const response = await fetch(endpoint, {
@@ -170,7 +881,7 @@ const CollectionDatesPage = () => {
     if (!status || selectedOrders.length === 0 || userRole !== 'gorush') return;
     
     try {
-      const response = await fetch('https://grpharmacyappserver.onrender.com/api/orders/bulk-go-rush-status', {
+      const response = await fetch('http://localhost:5050/api/orders/bulk-go-rush-status', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -215,7 +926,7 @@ const CollectionDatesPage = () => {
 
   const handleSaveCollectionDate = async (orderId) => {
     try {
-      const response = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${orderId}/collection-date`, {
+      const response = await fetch(`http://localhost:5050/api/orders/${orderId}/collection-date`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -262,6 +973,13 @@ const CollectionDatesPage = () => {
     setSelectedOrder(null);
   };
 
+  const toggleGroup = (dateString) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [dateString]: !prev[dateString]
+    }));
+  };
+
   const getDateLabel = (dateString) => {
     if (dateString === 'no-date') return 'No Collection Date';
     const date = parseISO(dateString);
@@ -270,15 +988,15 @@ const CollectionDatesPage = () => {
     return format(date, 'EEEE, MMMM d');
   };
 
-const statusStyles = {
-  pending: { bg: '#fef3c7', text: '#92400e', icon: Clock },
-  'ready-collect': { bg: '#dcfce7', text: '#065f46', icon: Package }, // New status
-  ready: { bg: '#dbeafe', text: '#1e40af', icon: Package },
-  collected: { bg: '#dcfce7', text: '#166534', icon: Check },
-  completed: { bg: '#dcfce7', text: '#065f46', icon: Check },
-  cancelled: { bg: '#fee2e2', text: '#991b1b', icon: X },
-  'in progress': { bg: '#fef3c7', text: '#854d0e', icon: RefreshCw }
-};
+  const statusStyles = {
+    pending: { bg: '#fef3c7', text: '#92400e', icon: Clock },
+    'ready-collect': { bg: '#dcfce7', text: '#065f46', icon: Package },
+    ready: { bg: '#dbeafe', text: '#1e40af', icon: Package },
+    collected: { bg: '#dcfce7', text: '#166534', icon: Check },
+    completed: { bg: '#dcfce7', text: '#065f46', icon: Check },
+    cancelled: { bg: '#fee2e2', text: '#991b1b', icon: X },
+    'in progress': { bg: '#fef3c7', text: '#854d0e', icon: RefreshCw }
+  };
 
   const exportToExcel = () => {
     const ordersToExport = selectedDate === 'no-date' 
@@ -299,6 +1017,7 @@ const statusStyles = {
       'Collection Date': order.collectionDate ? format(parseISO(order.collectionDate), 'yyyy-MM-dd') : 'Not set',
       'Pharmacy Status': order.pharmacyStatus || 'pending',
       'GoRush Status': order.goRushStatus || 'pending',
+      'Product': order.product || 'N/A',
       'Created On': order.dateTimeSubmission,
       'Payment Method': order.paymentMethod || 'N/A',
       'Payment Amount': order.paymentAmount ? `$${order.paymentAmount}` : 'N/A'
@@ -308,35 +1027,33 @@ const statusStyles = {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Orders');
     
-    // Generate Excel file
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     saveAs(blob, `orders_${selectedDate || 'all'}_${format(new Date(), 'yyyyMMdd')}.xlsx`);
   };
 
+  const getStatusStyle = (status) => {
+    if (!status) return { ...styles.statusBadge, ...styles.statusPending };
 
-const getStatusStyle = (status) => {
-  if (!status) return { ...styles.statusBadge, ...styles.statusPending };
-
-  switch (status.toLowerCase()) {
-    case 'ready-collect':  // New case
-    case 'ready':
-      return { ...styles.statusBadge, ...styles.statusReady };
-    case 'collected':
-    case 'completed':
-      return { ...styles.statusBadge, ...styles.statusCollected };
-    case 'cancelled':
-      return { ...styles.statusBadge, ...styles.statusCancelled };
-    case 'in progress':
-      return { 
-        ...styles.statusBadge, 
-        backgroundColor: '#fef3c7',
-        color: '#92400e'
-      };
-    default:
-      return { ...styles.statusBadge, ...styles.statusPending };
-  }
-};
+    switch (status.toLowerCase()) {
+      case 'ready-collect':
+      case 'ready':
+        return { ...styles.statusBadge, ...styles.statusReady };
+      case 'collected':
+      case 'completed':
+        return { ...styles.statusBadge, ...styles.statusCollected };
+      case 'cancelled':
+        return { ...styles.statusBadge, ...styles.statusCancelled };
+      case 'in progress':
+        return { 
+          ...styles.statusBadge, 
+          backgroundColor: '#fef3c7',
+          color: '#92400e'
+        };
+      default:
+        return { ...styles.statusBadge, ...styles.statusPending };
+    }
+  };
 
   const getTotalOrdersWithoutDates = () => {
     return Object.values(ordersWithoutDates).reduce((total, orders) => total + orders.length, 0);
@@ -364,186 +1081,228 @@ const getStatusStyle = (status) => {
     );
   };
 
-  const renderOrderCard = (order) => (
-    <div
-  key={order._id}
-  style={{
-    ...styles.orderCard,
-    ...(selectedOrders.includes(order._id) ? styles.selectedOrderCard : {})
-  }}
->
-      <div style={styles.orderHeader}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {userRole === 'gorush' && (
-            <input
-              type="checkbox"
-              checked={selectedOrders.includes(order._id)}
-              onChange={(e) => {
-                if (e.target.checked) {
-                  setSelectedOrders([...selectedOrders, order._id]);
-                } else {
-                  setSelectedOrders(selectedOrders.filter(id => id !== order._id));
-                }
-              }}
-              style={{ cursor: 'pointer' }}
-            />
-          )}
-          <span style={styles.orderTime}>
-            <Clock size={16} />
-            {order.dateTimeSubmission}
-          </span>
-        </div>
-        <div style={{ display: 'flex', gap: '5px' }}>
-          {renderStatusBadge(order.pharmacyStatus, 'Pharmacy')}
-          {renderStatusBadge(order.goRushStatus, 'GoRush')}
-        </div>
-      </div>
-
-      <div style={styles.orderDetails}>
-        <div style={styles.customerInfo}>
-          <User size={16} />
-          <span>{order.receiverName}</span>
-          <span style={styles.patientNumber}>{order.patientNumber}</span>
-        </div>
-        
-        <div style={styles.customerInfo}>
-          <Phone size={16} />
-          <span>{order.receiverPhoneNumber}</span>
-        </div>
-        
-        {order.receiverAddress && (
-          <div style={styles.customerInfo}>
-            <MapPin size={16} />
-            <span>{order.receiverAddress}</span>
-          </div>
-        )}
-      </div>
-      
-      {editingOrderId === order._id && (
-        <div style={styles.editSection}>
-          <div style={styles.customerInfo}>
-            <Calendar size={16} />
-            <span>Collection Date:</span>
-          </div>
-          <input
-            type="date"
-            value={newCollectionDate}
-            onChange={(e) => setNewCollectionDate(e.target.value)}
-            style={styles.dateInput}
-          />
-          <div style={styles.editActions}>
-            <button
-              onClick={() => handleSaveCollectionDate(order._id)}
-              style={styles.saveButton}
-            >
-              <Save size={14} />
-              Save
-            </button>
-            <button
-              onClick={handleCancelEdit}
-              style={styles.cancelButton}
-            >
-              <XCircle size={14} />
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-      
-      <div style={styles.orderFooter}>
-        <span style={styles.trackingNumber}>
-          <Package size={16} />
-          {order.doTrackingNumber}
-        </span>
-        
-        <div style={styles.actions}>
-          <div style={{ position: 'relative' }}>
-<select
-  value={order.pharmacyStatus || 'pending'}
-  onChange={(e) => handleUpdateStatus(order._id, 'pharmacyStatus', e.target.value)}
-  style={{
-    ...styles.statusSelect,
-    opacity: (userRole === 'jpmc' || userRole === 'moh') ? 1 : 0.6,
-    cursor: (userRole === 'jpmc' || userRole === 'moh') ? 'pointer' : 'not-allowed'
-  }}
-  disabled={userRole !== 'jpmc' && userRole !== 'moh'}
->
-  <option value="pending">Pending</option>
-  <option value="ready-collect">Ready to be Collected</option>
-  <option value="cancelled">Cancelled</option>
-</select>
-            {userRole !== 'jpmc' && userRole !== 'moh' && (
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                cursor: 'not-allowed'
-              }} title="Only pharmacy users can edit this status"></div>
+  const renderOrderCard = (order) => {
+    const isJPMC = order.product === 'pharmacyjpmc';
+    const isMOH = order.product === 'pharmacymoh';
+    
+    return (
+      <div
+        key={order._id}
+        style={{
+          ...styles.orderCard,
+          ...(selectedOrders.includes(order._id) ? styles.selectedOrderCard : {}),
+          borderLeft: `4px solid ${
+            isJPMC ? '#3b82f6' : 
+            isMOH ? '#10b981' : 
+            '#6b7280'
+          }`
+        }}
+      >
+        <div style={styles.orderHeader}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {userRole === 'gorush' && (
+              <input
+                type="checkbox"
+                checked={selectedOrders.includes(order._id)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedOrders([...selectedOrders, order._id]);
+                  } else {
+                    setSelectedOrders(selectedOrders.filter(id => id !== order._id));
+                  }
+                }}
+                style={{ cursor: 'pointer' }}
+              />
             )}
+            <span style={styles.orderTime}>
+              <Clock size={16} />
+              {order.dateTimeSubmission}
+            </span>
+            <span style={{
+              ...styles.productBadge,
+              backgroundColor: isJPMC ? '#dbeafe' : isMOH ? '#d1fae5' : '#e5e7eb',
+              color: isJPMC ? '#1e40af' : isMOH ? '#065f46' : '#4b5563'
+            }}>
+              {isJPMC ? 'JPMC' : isMOH ? 'MOH' : 'Other'}
+            </span>
           </div>
+          <div style={{ display: 'flex', gap: '5px' }}>
+            {renderStatusBadge(order.pharmacyStatus, 'Pharmacy')}
+            {renderStatusBadge(order.goRushStatus, 'GoRush')}
+          </div>
+        </div>
 
-          <div style={{ position: 'relative' }}>
-            <select
-              value={order.goRushStatus || 'pending'}
-              onChange={(e) => handleUpdateStatus(order._id, 'goRushStatus', e.target.value)}
-              style={{
-                ...styles.statusSelect,
-                opacity: userRole === 'gorush' ? 1 : 0.6,
-                cursor: userRole === 'gorush' ? 'pointer' : 'not-allowed'
-              }}
-              disabled={userRole !== 'gorush'}
-            >
-              <option value="pending">Pending</option>
-              <option value="collected">Collected</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-            {userRole !== 'gorush' && (
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                cursor: 'not-allowed'
-              }} title="Only GoRush users can edit this status"></div>
-            )}
+        <div style={styles.orderDetails}>
+          <div style={styles.customerInfo}>
+            <User size={16} />
+            <span>{order.receiverName}</span>
+            <span style={styles.patientNumber}>{order.patientNumber}</span>
           </div>
           
-          <button
-            onClick={() => handleViewOrder(order)}
-            style={styles.viewButton}
-            onMouseEnter={(e) => e.currentTarget.style.background = '#2563eb'}
-            onMouseLeave={(e) => e.currentTarget.style.background = '#3b82f6'}
-          >
-            View <ChevronRight size={16} />
-          </button>
+          <div style={styles.customerInfo}>
+            <Phone size={16} />
+            <span>{order.receiverPhoneNumber}</span>
+          </div>
+          
+          {order.receiverAddress && (
+            <div style={styles.customerInfo}>
+              <MapPin size={16} />
+              <span>{order.receiverAddress}</span>
+            </div>
+          )}
+        </div>
+        
+        {editingOrderId === order._id && (
+          <div style={styles.editSection}>
+            <div style={styles.customerInfo}>
+              <Calendar size={16} />
+              <span>Collection Date:</span>
+            </div>
+            <input
+              type="date"
+              value={newCollectionDate}
+              onChange={(e) => setNewCollectionDate(e.target.value)}
+              style={styles.dateInput}
+            />
+            <div style={styles.editActions}>
+              <button
+                onClick={() => handleSaveCollectionDate(order._id)}
+                style={styles.saveButton}
+              >
+                <Save size={14} />
+                Save
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                style={styles.cancelButton}
+              >
+                <XCircle size={14} />
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+        
+        <div style={styles.orderFooter}>
+          <span style={styles.trackingNumber}>
+            <Package size={16} />
+            {order.doTrackingNumber}
+          </span>
+          
+          <div style={styles.actions}>
+            <div style={{ position: 'relative' }}>
+              <select
+                value={order.pharmacyStatus || 'pending'}
+                onChange={(e) => handleUpdateStatus(order._id, 'pharmacyStatus', e.target.value)}
+                style={{
+                  ...styles.statusSelect,
+                  opacity: (userRole === 'jpmc' || userRole === 'moh') ? 1 : 0.6,
+                  cursor: (userRole === 'jpmc' || userRole === 'moh') ? 'pointer' : 'not-allowed'
+                }}
+                disabled={userRole !== 'jpmc' && userRole !== 'moh'}
+              >
+                <option value="pending">Pending</option>
+                <option value="ready-collect">Ready to be Collected</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              {userRole !== 'jpmc' && userRole !== 'moh' && (
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  cursor: 'not-allowed'
+                }} title="Only pharmacy users can edit this status"></div>
+              )}
+            </div>
 
-{(userRole === 'jpmc' || userRole === 'gorush') && editingOrderId !== order._id && (
-  <button
-    onClick={() => handleEditCollectionDate(order._id, order.collectionDate)}
-    style={styles.editButton}
-    onMouseEnter={(e) => e.currentTarget.style.background = '#059669'}
-    onMouseLeave={(e) => e.currentTarget.style.background = '#10b981'}
-  >
-    <Edit3 size={14} />
-    Edit Date
-  </button>
-)}
+            <div style={{ position: 'relative' }}>
+              <select
+                value={order.goRushStatus || 'pending'}
+                onChange={(e) => handleUpdateStatus(order._id, 'goRushStatus', e.target.value)}
+                style={{
+                  ...styles.statusSelect,
+                  opacity: userRole === 'gorush' ? 1 : 0.6,
+                  cursor: userRole === 'gorush' ? 'pointer' : 'not-allowed'
+                }}
+                disabled={userRole !== 'gorush'}
+              >
+                <option value="pending">Pending</option>
+                <option value="collected">Collected</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              {userRole !== 'gorush' && (
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  cursor: 'not-allowed'
+                }} title="Only GoRush users can edit this status"></div>
+              )}
+            </div>
+            
+            <button
+              onClick={() => handleViewOrder(order)}
+              style={styles.viewButton}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#2563eb'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#3b82f6'}
+            >
+              View <ChevronRight size={16} />
+            </button>
+
+            {(userRole === 'jpmc' || userRole === 'gorush') && editingOrderId !== order._id && (
+              <button
+                onClick={() => handleEditCollectionDate(order._id, order.collectionDate)}
+                style={styles.editButton}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#059669'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#10b981'}
+              >
+                <Edit3 size={14} />
+                Edit Date
+              </button>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
+
+    const groupOrdersByPharmacyType = (orders) => {
+    return orders.reduce((acc, order) => {
+      const type = order.product === 'pharmacymoh' ? 'MOH' : 
+                  order.product === 'pharmacyjpmc' ? 'JPMC' : 'Other';
+      if (!acc[type]) {
+        acc[type] = [];
+      }
+      acc[type].push(order);
+      return acc;
+    }, {});
+  };
 
   const renderOrderPopup = () => {
     if (!selectedOrder) return null;
+
+    const isJPMC = selectedOrder.product === 'pharmacyjpmc';
+    const isMOH = selectedOrder.product === 'pharmacymoh';
 
     return (
       <div style={styles.popup} onClick={closePopup}>
         <div style={styles.popupContent} onClick={(e) => e.stopPropagation()}>
           <div style={styles.popupHeader}>
-            <h2 style={styles.popupTitle}>Order Details</h2>
+            <div>
+              <h2 style={styles.popupTitle}>Order Details</h2>
+              <div style={{
+                ...styles.productBadge,
+                backgroundColor: isJPMC ? '#dbeafe' : isMOH ? '#d1fae5' : '#e5e7eb',
+                color: isJPMC ? '#1e40af' : isMOH ? '#065f46' : '#4b5563',
+                marginTop: '4px'
+              }}>
+                {isJPMC ? 'JPMC Pharmacy' : isMOH ? 'MOH Pharmacy' : 'Other Product'}
+              </div>
+            </div>
             <button style={styles.closeButton} onClick={closePopup}>
               <X size={24} />
             </button>
@@ -730,28 +1489,22 @@ const getStatusStyle = (status) => {
 
   if (loading) return <div style={styles.loading}>Loading collection dates...</div>;
 
-  return (
-    <div style={styles.container}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={styles.title}>Collection Dates</h1>
-        <div style={{ 
-          padding: '6px 12px', 
-          borderRadius: '4px', 
-          backgroundColor: userRole === 'gorush' ? '#3b82f6' : '#10b981',
-          color: 'white',
-          fontSize: '14px',
-          fontWeight: '500'
-        }}>
-          {userRole === 'gorush' ? 'GoRush User' : 'Pharmacy User'}
-        </div>
+return (
+  <div style={styles.container}>
+    <div style={styles.header}>
+      <h1 style={styles.title}>Collection Dates</h1>
+      <div style={styles.userRoleBadge}>
+        {userRole === 'gorush' ? 'GoRush User' : 'Pharmacy User'}
       </div>
-      
-      {!selectedDate ? (
-        <div style={styles.selectPrompt}>
-          <p style={styles.promptText}>Please select a collection date to view orders</p>
-        </div>
-      ) : null}
+    </div>
 
+    {!selectedDate && (
+      <div style={styles.selectPrompt}>
+        <p style={styles.promptText}>Please select a collection date to view orders</p>
+      </div>
+    )}
+
+    <div style={styles.dateSelectorContainer}>
       <div style={styles.dateSelector}>
         {dates.map((date) => (
           <button
@@ -766,7 +1519,7 @@ const getStatusStyle = (status) => {
             <span style={styles.orderCount}>{date.count} orders</span>
           </button>
         ))}
-        
+
         <button
           style={{
             ...styles.dateButton,
@@ -778,101 +1531,110 @@ const getStatusStyle = (status) => {
           <span style={styles.orderCount}>{getTotalOrdersWithoutDates()} orders</span>
         </button>
       </div>
-
-      {selectedDate && (
-        <div style={styles.ordersContainer}>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '20px',
-          }}>
-  <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-    <h2 style={styles.dateTitle}>
-      {selectedDate === 'no-date'
-        ? 'Orders Without Collection Dates'
-        : getDateLabel(selectedDate)}
-    </h2>
-    <div style={{ display: 'flex', gap: '10px' }}>
-      <button 
-        onClick={exportToExcel}
-        style={{
-          ...styles.exportButton,
-          backgroundColor: '#10b981'
-        }}
-      >
-        <Download size={16} /> Excel
-      </button>
     </div>
-  </div>
 
+    {selectedDate && (
+      <div style={styles.ordersContainer}>
+        <div style={styles.controlsContainer}>
+          <h2 style={styles.dateTitle}>
+            {selectedDate === 'no-date'
+              ? 'Orders Without Collection Dates'
+              : getDateLabel(selectedDate)}
+          </h2>
 
-            {selectedOrders.length > 0 && userRole === 'gorush' && (
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <select
-                  value=""
-                  onChange={(e) => handleBulkStatusUpdate(e.target.value)}
-                  style={styles.statusSelect}
-                >
-                  <option value="">Update Selected</option>
-                  <option value="pending">Pending</option>
-                  <option value="collected">Collected</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-                <button
-                  onClick={() => setSelectedOrders([])}
-                  style={styles.cancelButton}
-                >
-                  Clear Selection
-                </button>
-              </div>
-            )}
+          <div style={styles.actionsContainer}>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              style={styles.filterButton}
+            >
+              <Filter size={16} /> Filters
+            </button>
+
+            <div style={styles.exportButtons}>
+              <button
+                onClick={exportToExcel}
+                style={styles.exportButton}
+              >
+                <Download size={16} /> Excel
+              </button>
+            </div>
           </div>
+        </div>
 
-          {selectedDate === 'no-date' ? (
-            Object.entries(ordersWithoutDates).length > 0 ? (
-              <div>
-                {userRole === 'gorush' && (
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    marginBottom: '10px',
-                  }}>
-                    <input
-                      type="checkbox"
-                      checked={selectAll}
-                      onChange={handleSelectAll}
-                      style={{ cursor: 'pointer' }}
-                    />
-                    <span>Select all orders</span>
-                  </div>
-                )}
-                {Object.entries(ordersWithoutDates).map(([dateString, dateOrders]) => (
-                  <div key={dateString}>
-                    <h3 style={{ margin: '15px 0 10px', fontSize: '16px' }}>
-                      Created on: {format(parseISO(dateString), 'EEEE, MMMM d')}
-                    </h3>
-                    <div style={styles.ordersList}>
-                      {dateOrders.map(renderOrderCard)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p style={{ textAlign: 'center', color: '#666' }}>
-                No orders without collection dates
-              </p>
-            )
-          ) : orders.length > 0 ? (
+        {showFilters && (
+          <div style={styles.filterPanel}>
+            <div style={styles.filterGroup}>
+              <label style={styles.filterLabel}>Product Type</label>
+              <select
+                value={productFilter}
+                onChange={(e) => setProductFilter(e.target.value)}
+                style={styles.filterSelect}
+              >
+                <option value="all">All Products</option>
+                <option value="pharmacyjpmc">JPMC Pharmacy</option>
+                <option value="pharmacymoh">MOH Pharmacy</option>
+              </select>
+            </div>
+
+            <div style={styles.filterGroup}>
+              <label style={styles.filterLabel}>Status</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={styles.filterSelect}
+              >
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="ready-collect">Ready to Collect</option>
+                <option value="collected">Collected</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            <div style={styles.filterGroup}>
+              <label style={styles.filterLabel}>Search</label>
+              <input
+                type="text"
+                placeholder="Search orders..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={styles.searchInput}
+              />
+            </div>
+          </div>
+        )}
+
+        {selectedOrders.length > 0 && userRole === 'gorush' && (
+          <div style={styles.bulkActions}>
+            <div style={styles.bulkSelectionInfo}>
+              {selectedOrders.length} orders selected
+            </div>
+            <div style={styles.bulkStatusActions}>
+              <select
+                value=""
+                onChange={(e) => handleBulkStatusUpdate(e.target.value)}
+                style={styles.bulkStatusSelect}
+              >
+                <option value="">Update Status</option>
+                <option value="pending">Pending</option>
+                <option value="collected">Collected</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              <button
+                onClick={() => setSelectedOrders([])}
+                style={styles.clearSelectionButton}
+              >
+                Clear Selection
+              </button>
+            </div>
+          </div>
+        )}
+
+        {selectedDate === 'no-date' ? (
+          Object.entries(ordersWithoutDates).length > 0 ? (
             <div>
               {userRole === 'gorush' && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  marginBottom: '10px',
-                }}>
+                <div style={styles.selectAllContainer}>
                   <input
                     type="checkbox"
                     checked={selectAll}
@@ -882,424 +1644,44 @@ const getStatusStyle = (status) => {
                   <span>Select all orders</span>
                 </div>
               )}
-              <div style={styles.ordersList}>{orders.map(renderOrderCard)}</div>
+              {Object.entries(ordersWithoutDates).map(([dateString, dateOrders]) =>
+                renderDateGroup(dateString, dateOrders)
+              )}
             </div>
           ) : (
-            <p style={{ textAlign: 'center', color: '#666' }}>
-              No orders for this date
-            </p>
-          )}
-        </div>
-      )}
+            <div style={styles.emptyState}>
+              <Package size={48} color="#9ca3af" />
+              <p style={styles.emptyText}>No orders without collection dates</p>
+            </div>
+          )
+        ) : filteredOrders.length > 0 ? (
+          <div>
+            {userRole === 'gorush' && (
+              <div style={styles.selectAllContainer}>
+                <input
+                  type="checkbox"
+                  checked={selectAll}
+                  onChange={handleSelectAll}
+                  style={{ cursor: 'pointer' }}
+                />
+                <span>Select all orders</span>
+              </div>
+            )}
+            {renderDateGroup(selectedDate, filteredOrders)}
+          </div>
+        ) : (
+          <div style={styles.emptyState}>
+            <Package size={48} color="#9ca3af" />
+            <p style={styles.emptyText}>No orders for this date</p>
+          </div>
+        )}
+      </div>
+    )}
 
-      {showPopup && renderOrderPopup()}
-    </div>
-  );
-};
+    {showPopup && renderOrderPopup()}
+  </div>
+);
+        };
 
-
-
-const styles = {
-  container: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '20px',
-    fontFamily: 'system-ui, -apple-system, sans-serif'
-  },
-  title: {
-    fontSize: '24px',
-    marginBottom: '20px',
-    color: '#111827',
-    fontWeight: '600'
-  },
-  selectPrompt: {
-    textAlign: 'center',
-    padding: '40px 20px',
-    background: 'white',
-    borderRadius: '10px',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-    marginBottom: '20px'
-  },
-  promptText: {
-    fontSize: '18px',
-    color: '#666',
-    marginBottom: '20px'
-  },
-  dateSelector: {
-    display: 'flex',
-    gap: '10px',
-    marginBottom: '20px',
-    overflowX: 'auto',
-    paddingBottom: '10px',
-    flexWrap: 'wrap'
-  },
-  dateButton: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '15px 20px',
-    borderRadius: '8px',
-    background: '#f5f5f5',
-    border: 'none',
-    cursor: 'pointer',
-    minWidth: '120px',
-    transition: 'all 0.2s'
-  },
-  activeDateButton: {
-    background: '#3b82f6',
-    color: 'white'
-  },
-  noDateButton: {
-    background: '#fbbf24',
-    color: 'white'
-  },
-  dateLabel: {
-    fontWeight: '500',
-    marginBottom: '5px'
-  },
-  orderCount: {
-    fontSize: '12px',
-    opacity: '0.8'
-  },
-  ordersContainer: {
-    background: 'white',
-    borderRadius: '10px',
-    padding: '20px',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-  },
-  dateTitle: {
-    fontSize: '20px',
-    marginBottom: '20px',
-    color: '#111827'
-  },
-  ordersList: {
-    display: 'grid',
-    gap: '15px'
-  },
-  orderCard: {
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    padding: '15px',
-    transition: 'all 0.2s'
-  },
-  selectedOrderCard: {
-    borderColor: '#3b82f6',
-    backgroundColor: '#f0f7ff'
-  },
-  orderHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    marginBottom: '10px'
-  },
-  orderTime: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '5px',
-    fontSize: '14px',
-    color: '#666'
-  },
-  statusBadge: {
-    padding: '4px 10px',
-    borderRadius: '20px',
-    fontSize: '12px',
-    fontWeight: '500',
-    textTransform: 'capitalize'
-  },
-  statusPending: {
-    background: '#fef3c7',
-    color: '#92400e'
-  },
-  statusReady: {
-    background: '#dbeafe',
-    color: '#1e40af'
-  },
-  statusCollected: {
-    background: '#dcfce7',
-    color: '#166534'
-  },
-  statusCancelled: {
-    background: '#fee2e2',
-    color: '#991b1b'
-  },
-  orderDetails: {
-    marginBottom: '10px'
-  },
-  customerInfo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    marginBottom: '5px',
-    fontSize: '14px'
-  },
-  patientNumber: {
-    background: '#f3f4f6',
-    padding: '2px 6px',
-    borderRadius: '4px',
-    fontFamily: 'monospace'
-  },
-  orderFooter: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: '10px'
-  },
-  trackingNumber: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '5px',
-    fontFamily: 'monospace',
-    background: '#f3f4f6',
-    padding: '4px 8px',
-    borderRadius: '4px',
-    fontSize: '13px'
-  },
-  actions: {
-    display: 'flex',
-    gap: '10px',
-    flexWrap: 'wrap'
-  },
-  statusSelect: {
-    padding: '6px 10px',
-    borderRadius: '4px',
-    border: '1px solid #d1d5db',
-    background: 'white',
-    cursor: 'pointer'
-  },
-  viewButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '5px',
-    background: '#3b82f6',
-    color: 'white',
-    border: 'none',
-    padding: '6px 12px',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px'
-  },
-  editButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '5px',
-    background: '#10b981',
-    color: 'white',
-    border: 'none',
-    padding: '6px 12px',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px'
-  },
-  deleteButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '5px',
-    background: '#ef4444',
-    color: 'white',
-    border: 'none',
-    padding: '6px 12px',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px'
-  },
-  saveButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '5px',
-    background: '#059669',
-    color: 'white',
-    border: 'none',
-    padding: '6px 12px',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px'
-  },
-  cancelButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '5px',
-    background: '#6b7280',
-    color: 'white',
-    border: 'none',
-    padding: '6px 12px',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px'
-  },
-  dateInput: {
-    padding: '6px 10px',
-    borderRadius: '4px',
-    border: '1px solid #d1d5db',
-    background: 'white',
-    fontSize: '14px',
-    minWidth: '150px'
-  },
-  editSection: {
-    background: '#f9fafb',
-    padding: '10px',
-    borderRadius: '6px',
-    marginTop: '10px',
-    border: '1px solid #e5e7eb'
-  },
-  editActions: {
-    display: 'flex',
-    gap: '8px',
-    marginTop: '10px'
-  },
-  confirmDialog: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1001
-  },
-  confirmContent: {
-    background: 'white',
-    borderRadius: '10px',
-    padding: '25px',
-    maxWidth: '400px',
-    width: '90%',
-    textAlign: 'center'
-  },
-  confirmTitle: {
-    fontSize: '18px',
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: '15px'
-  },
-  confirmText: {
-    fontSize: '14px',
-    color: '#666',
-    marginBottom: '20px'
-  },
-  confirmActions: {
-    display: 'flex',
-    gap: '10px',
-    justifyContent: 'center'
-  },
-  loading: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '200px',
-    fontSize: '16px',
-    color: '#666'
-  },
-  error: {
-    color: '#dc2626',
-    padding: '20px',
-    textAlign: 'center'
-  },
-  popup: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000
-  },
-  popupContent: {
-    background: 'white',
-    borderRadius: '10px',
-    padding: '30px',
-    maxWidth: '600px',
-    width: '90%',
-    maxHeight: '80vh',
-    overflowY: 'auto',
-    position: 'relative'
-  },
-  popupHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '20px'
-  },
-  popupTitle: {
-    fontSize: '24px',
-    fontWeight: '600',
-    color: '#111827'
-  },
-  closeButton: {
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    padding: '5px',
-    borderRadius: '4px',
-    color: '#666'
-  },
-  popupSection: {
-    marginBottom: '20px'
-  },
-  sectionTitle: {
-    fontSize: '16px',
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: '10px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px'
-  },
-  infoGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '15px'
-  },
-  infoItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px'
-  },
-  infoLabel: {
-    fontSize: '12px',
-    color: '#666',
-    fontWeight: '500',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px'
-  },
-  infoValue: {
-    fontSize: '14px',
-    color: '#111827',
-    fontWeight: '400'
-  },
-  groupedSection: {
-    background: '#f9fafb',
-    padding: '15px',
-    borderRadius: '8px',
-    marginBottom: '20px'
-  },
-  groupTitle: {
-    fontSize: '18px',
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: '15px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px'
-  },
-    exportButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '5px',
-    color: 'white',
-    border: 'none',
-    padding: '8px 12px',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    transition: 'background-color 0.2s',
-    '&:hover': {
-      opacity: 0.9
-    }
-  }
-};
 
 export default CollectionDatesPage;
