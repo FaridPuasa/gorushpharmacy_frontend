@@ -13,7 +13,7 @@ import ManifestViewer from './pages/Manifest';
 
 function App() {
   const [userRole, setUserRole] = useState(null);
-  const [showPasswordModal, setShowPasswordModal] = useState(true);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
    useEffect(() => {
     // Ping backend every 10 minutes (600,000ms)
@@ -46,7 +46,7 @@ function App() {
   // Protected Route Component
   const ProtectedRoute = ({ children, allowedRoles = ['gorush', 'jpmc', 'moh'] }) => {
     if (!userRole) {
-      return null; // Don't render anything while password modal is shown
+      return <Navigate to="/pharmacylogin" replace />;
     }
     
     if (!allowedRoles.includes(userRole)) {
@@ -56,20 +56,21 @@ function App() {
     return children;
   };
 
-  // Show password modal if not authenticated
-  if (showPasswordModal) {
-    return <PasswordModal onSuccess={handlePasswordSuccess} />;
-  }
-
   return (
     <Router>
       <Routes>
+        {/* Login route - shows password modal */}
+        <Route path="/pharmacylogin" element={
+          userRole ? (
+            // If already logged in, redirect based on role
+            userRole === 'jpmc' ? <Navigate to="/today" replace /> : <Navigate to="/dashboard" replace />
+          ) : (
+            <PasswordModal onSuccess={handlePasswordSuccess} />
+          )
+        } />
+        
+        {/* Protected routes under Layout */}
         <Route path="/" element={<Layout />}>
-          <Route index element={
-            <ProtectedRoute allowedRoles={['gorush']}>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
           <Route path="orders" element={
             <ProtectedRoute allowedRoles={['gorush', 'jpmc', 'moh']}>
               <OrdersPage />
@@ -105,17 +106,16 @@ function App() {
               <ManifestViewer />
             </ProtectedRoute>
           } />
-          <Route path="/orders/:id" element={
+          <Route path="orders/:id" element={
             <ProtectedRoute allowedRoles={['gorush', 'jpmc', 'moh']}>
               <OrderDetails />
             </ProtectedRoute>
           } />
-          
-          {/* Redirect JPMC users to collection page if they try to access restricted routes */}
-          <Route path="*" element={
-            userRole === 'jpmc' ? <Navigate to="/today" replace /> : <Navigate to="/dashboard" replace />
-          } />
         </Route>
+        
+        {/* Redirect root and any unmatched routes to login */}
+        <Route path="/" element={<Navigate to="/pharmacylogin" replace />} />
+        <Route path="*" element={<Navigate to="/pharmacylogin" replace />} />
       </Routes>
     </Router>
   );
