@@ -18,7 +18,7 @@ function App() {
    useEffect(() => {
     // Ping backend every 10 minutes (600,000ms)
     const interval = setInterval(() => {
-      fetch('https://grpharmacyappserver.onrender.com/api/health')
+      fetch('http://localhost:5050/api/health')
         .then(() => console.log('Backend pinged successfully'))
         .catch(err => console.error('Ping failed:', err));
     }, 600_000); // 10 minutes
@@ -59,9 +59,6 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Root redirect */}
-        <Route path="/" element={<Navigate to="/pharmacylogin" replace />} />
-        
         {/* Login route - shows password modal */}
         <Route path="/pharmacylogin" element={
           userRole ? (
@@ -73,64 +70,51 @@ function App() {
         } />
         
         {/* Protected routes under Layout */}
-        <Route path="/orders" element={
-          <Layout>
+        <Route path="/" element={<Layout />}>
+          <Route path="orders" element={
             <ProtectedRoute allowedRoles={['gorush', 'jpmc', 'moh']}>
               <OrdersPage />
             </ProtectedRoute>
-          </Layout>
-        } />
-        <Route path="/dashboard" element={
-          <Layout>
+          } />
+          <Route path="dashboard" element={
             <ProtectedRoute allowedRoles={['gorush']}>
               <Dashboard />
             </ProtectedRoute>
-          </Layout>
-        } />
-        <Route path="/customers" element={
-          <Layout>
+          } />
+          <Route path="customers" element={
             <ProtectedRoute allowedRoles={['gorush']}>
               <AllCustomersPage />
             </ProtectedRoute>
-          </Layout>
-        } />
-        <Route path="/mohorders" element={
-          <Layout>
+          } />
+          <Route path="mohorders" element={
             <ProtectedRoute allowedRoles={['gorush']}>
               <MohOrdersDashboard />
             </ProtectedRoute>
-          </Layout>
-        } />
-        <Route path="/today" element={
-          <Layout>
+          } />
+          <Route path="today" element={
             <ProtectedRoute allowedRoles={['gorush', 'jpmc', 'moh']}>
               <Today />
             </ProtectedRoute>
-          </Layout>
-        } />
-        <Route path="/collection" element={
-          <Layout>
+          } />
+          <Route path="collection" element={
             <ProtectedRoute allowedRoles={['gorush', 'jpmc', 'moh']}>
               <CollectionDatesPage />
             </ProtectedRoute>
-          </Layout>
-        } />
-        <Route path="/manifestviewer" element={
-          <Layout>
+          } />
+          <Route path="manifestviewer" element={
             <ProtectedRoute allowedRoles={['gorush']}>
               <ManifestViewer />
             </ProtectedRoute>
-          </Layout>
-        } />
-        <Route path="/orders/:id" element={
-          <Layout>
+          } />
+          <Route path="orders/:id" element={
             <ProtectedRoute allowedRoles={['gorush', 'jpmc', 'moh']}>
               <OrderDetails />
             </ProtectedRoute>
-          </Layout>
-        } />
+          } />
+        </Route>
         
-        {/* Catch all unmatched routes */}
+        {/* Redirect root and any unmatched routes to login */}
+        <Route path="/" element={<Navigate to="/pharmacylogin" replace />} />
         <Route path="*" element={<Navigate to="/pharmacylogin" replace />} />
       </Routes>
     </Router>
