@@ -22,6 +22,7 @@ import {
   ClockCircleOutlined,
   CopyOutlined,
   RocketOutlined,
+  CloseCircleOutlined,
   ThunderboltOutlined,
   CarOutlined,
   MedicineBoxOutlined,
@@ -37,6 +38,7 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import axios from 'axios';
 import { SearchOutlined, FileExclamationOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 
 const { TabPane } = Tabs;
 const { Title, Text } = Typography;
@@ -123,6 +125,12 @@ const styles = {
   textAlign: 'center',
   padding: '8px 0',
 },
+  disabledButton: {
+    opacity: 0.5,
+    cursor: 'not-allowed',
+    '&:hover': {
+      opacity: 0.5
+    }}
 };
 
 const PreviewModal = ({ 
@@ -309,25 +317,44 @@ useEffect(() => {
             {collectionDate ? 'Generate Manifest' : 'Set Collection Date & Generate'}
           </Button>
         ),
-                <Button 
-          key="preview-packing" 
-          type="default" 
-                   onClick={onPreviewPackingList}
-          disabled={!safeData?.rows || safeData.rows.length === 0}
-          icon={<EyeOutlined />}
-          style={{ marginLeft: 8 }}
-        >
-          Preview Packing List
-        </Button>,
-        <Button 
-          key="download" 
-          type="primary" 
-          onClick={onDownloadExcel}
-          disabled={!safeData?.rows || safeData.rows.length === 0}
-          icon={<DownloadOutlined />}
-        >
-          Download Excel
-        </Button>,
+
+<Tooltip 
+  title={!data?.savedToDMS ? "Please save the manifest first" : ""}
+  placement="top"
+>
+<div>
+<Button 
+  key="preview-packing" 
+  type="default" 
+  onClick={onPreviewPackingList}
+  disabled={!data?.savedToDMS || !safeData?.rows || safeData.rows.length === 0}
+  icon={<EyeOutlined />}
+  style={{ 
+    marginLeft: 8,
+    ...(!data?.savedToDMS ? styles.disabledButton : {}) 
+  }}
+>
+  Preview Packing List
+</Button>
+</div>
+</Tooltip>,
+<Tooltip 
+  title={!data?.savedToDMS ? "Please save the manifest first" : ""}
+  placement="top"
+>
+<div>
+<Button 
+  key="download" 
+  type="primary" 
+  onClick={onDownloadExcel}
+  disabled={!data?.savedToDMS || !safeData?.rows || safeData.rows.length === 0}
+  icon={<DownloadOutlined />}
+  style={!data?.savedToDMS ? styles.disabledButton : {}}
+>
+  Download Excel
+</Button>
+</div>
+</Tooltip>
       ]}
     >
       {!data?.savedToDMS && (
@@ -443,6 +470,7 @@ const MohOrdersDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
     const [startNumber, setStartNumber] = useState(1);
   const [previewData, setPreviewData] = useState(null);
+  const [pageSize, setPageSize] = useState(15);
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savedForms, setSavedForms] = useState([]);
@@ -453,6 +481,7 @@ const [formsLoading, setFormsLoading] = useState(false);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
 const [jobMethodStats, setJobMethodStats] = useState({
   all: 0,
@@ -461,6 +490,7 @@ const [jobMethodStats, setJobMethodStats] = useState({
   Immediate: 0,
   'Self Collect': 0,
   TTG: 0,
+    Cancelled: 0,
   KB: 0,
   Others: 0,
   noCollectionDate: 0,  // New metric
@@ -474,6 +504,7 @@ const [jobMethodStats, setJobMethodStats] = useState({
   const [collectionDate, setCollectionDate] = useState(null);
   const [trackingNumbers, setTrackingNumbers] = useState('');
   const [bulkUpdateLoading, setBulkUpdateLoading] = useState(false);
+  
 
 const fetchSavedForms = async () => {
   try {
@@ -586,9 +617,9 @@ useEffect(() => {
   filterOrdersByDate();
 }, [selectedDate, dateRange, orders]); 
 
-  useEffect(() => {
-    calculateJobMethodStats(filteredOrders);
-  }, [filteredOrders, savedOrders]); // Add savedOrders to dependencies
+useEffect(() => {
+  calculateJobMethodStats(filteredOrders);
+}, [filteredOrders, savedOrders]);
 
   useEffect(() => {
   if (isPreviewVisible && previewData && selectedRows.length > 0 && !previewData.savedToDMS) {
@@ -862,7 +893,7 @@ const generatePackingListHTML = (previewData) => {
       <td>${row.rawData.remarks || ''}</td>
       <td>${row.rawData.area || 'N/A'}</td>
       <td>${row.rawData.patientNumber || 'N/A'}</td>
-      <td>${row.doTrackingNumber || 'N/A'}</td>
+      <td>${row.rawData.doTrackingNumber || 'N/A'}</td>
       <td>${row.rawData.receiverPhoneNumber || 'N/A'}</td>
       <td>${row.rawData.jobMethod || 'N/A'}</td>
       <td>${row.rawData.internalRemarks || ''}</td>
@@ -878,7 +909,7 @@ const generatePackingListHTML = (previewData) => {
   // Properly escape the JSON data for use in JavaScript
   const jsonData = encodeURIComponent(JSON.stringify(previewData));
 
-  return `<!DOCTYPE html>
+return `<!DOCTYPE html>
 <html>
 <head>
   <title>Packing List - ${previewData.summary.batch || 'MOH Orders'}</title>
@@ -986,6 +1017,14 @@ const generatePackingListHTML = (previewData) => {
       vertical-align: top;
     }
     
+    /* Enhanced styling for Internal Notes column */
+    .internal-notes {
+      min-width: 200px;
+      max-width: 300px;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+    
     .footer {
       margin-top: 20px;
       padding-top: 10px;
@@ -1080,18 +1119,18 @@ const generatePackingListHTML = (previewData) => {
   <table>
     <thead>
       <tr>
-        <th width="80px">No.</th>
-        <th width="150px">Patient Name</th>
-        <th width="50px">Dry Med</th>
-        <th width="50px">Fridge Sticker</th>
-        <th width="50px">Fridge Item</th>
-        <th width="120px">Remarks</th>
-        <th width="80px">Area</th>
-        <th width="80px">BruHIMs #</th>
-        <th width="80px">Tracking #</th>
-        <th width="100px">Phone #</th>
-        <th width="80px">Delivery Type</th>
-        <th>Internal Notes</th>
+        <th width="60px">No.</th>
+        <th width="120px">Patient Name</th>
+        <th width="45px">Dry Med</th>
+        <th width="45px">Fridge Sticker</th>
+        <th width="45px">Fridge Item</th>
+        <th width="100px">Remarks</th>
+        <th width="60px">Area</th>
+        <th width="70px">BruHIMs #</th>
+        <th width="70px">Tracking #</th>
+        <th width="80px">Phone #</th>
+        <th width="70px">Delivery Type</th>
+        <th class="internal-notes">Internal Notes</th>
       </tr>
     </thead>
     <tbody>
@@ -1371,7 +1410,7 @@ const handleDownloadExcel = () => {
 
 const calculateJobMethodStats = (orders) => {
   const stats = {
-    all: orders.length,
+    all: 0,
     Standard: 0,
     Express: 0,
     Immediate: 0,
@@ -1379,40 +1418,43 @@ const calculateJobMethodStats = (orders) => {
     TTG: 0,
     KB: 0,
     Others: 0,
+    Cancelled: 0,
     noCollectionDate: 0,
     noFormCreated: 0
   };
 
   orders.forEach(order => {
-    // Count orders without collection date
+    // First check if order is cancelled
+    if (order.goRushStatus === 'cancelled') {
+      stats.Cancelled++;
+      return; // Skip further checks for cancelled orders
+    }
+
+    // Count orders without collection date (only non-cancelled)
     if (!order.collectionDate) {
       stats.noCollectionDate++;
     }
 
-    // Count orders not in any saved form
+    // Count orders not in any saved form (only non-cancelled)
     if (!savedOrders.includes(order._id)) {
       stats.noFormCreated++;
     }
 
-    // Existing job method counting logic
+    // Count job methods (only non-cancelled)
     if (order.appointmentDistrict === "Tutong" && order.sendOrderTo === "PMMH") {
       stats.TTG++;
-      return;
-    }
-    
-    if (order.appointmentDistrict === "Belait" && order.sendOrderTo === "SSBH") {
+    } else if (order.appointmentDistrict === "Belait" && order.sendOrderTo === "SSBH") {
       stats.KB++;
-      return;
-    }
-    
-    const jobMethod = order.jobMethod;
-    if (['Standard', 'Express', 'Immediate', 'Self Collect'].includes(jobMethod)) {
-      stats[jobMethod]++;
+    } else if (['Standard', 'Express', 'Immediate', 'Self Collect'].includes(order.jobMethod)) {
+      stats[order.jobMethod]++;
     } else {
       stats.Others++;
     }
   });
 
+  // Calculate total (including cancelled)
+  stats.all = orders.length;
+  
   setJobMethodStats(stats);
 };
 
@@ -1440,7 +1482,12 @@ const calculateJobMethodStats = (orders) => {
     }
   };
 
- const getFilteredOrdersByTab = () => {
+
+useEffect(() => {
+  filterOrdersByDate();
+}, [selectedDate, dateRange, orders]);
+
+const getFilteredOrdersByTab = () => {
   let filtered = [...filteredOrders];
   
   // Apply tab filter
@@ -1467,6 +1514,15 @@ const calculateJobMethodStats = (orders) => {
         o.appointmentDistrict === "Belait" && o.sendOrderTo === "SSBH"
       );
       break;
+    case 'noCollectionDate':
+      filtered = filtered.filter(o => !o.collectionDate);
+      break;
+    case 'noFormCreated':
+      filtered = filtered.filter(o => !savedOrders.includes(o._id));
+      break;
+          case 'Cancelled':
+      filtered = filtered.filter(o => o.goRushStatus === 'cancelled');
+      break;
     case 'Others':
       filtered = filtered.filter(o => 
         !['Standard', 'Express', 'Immediate', 'Self Collect'].includes(o.jobMethod) &&
@@ -1481,7 +1537,15 @@ const calculateJobMethodStats = (orders) => {
   
   // Apply search filter if there's a search term
   if (searchTerm.trim()) {
-    filtered = searchOrders(searchTerm);
+    const lowerTerm = searchTerm.toLowerCase();
+    filtered = filtered.filter(order => {
+      return (
+        order.doTrackingNumber?.toLowerCase().includes(lowerTerm) ||
+        order.receiverName?.toLowerCase().includes(lowerTerm) ||
+        (savedOrders.includes(order._id) && 
+          savedForms.find(f => f.orderIds?.includes(order._id))?.formName?.toLowerCase().includes(lowerTerm))
+      );
+    });
   }
   
   return filtered;
@@ -1800,8 +1864,8 @@ const columns = [
     },
     {
       title: 'Status',
-      dataIndex: 'pharmacyStatus',
-      key: 'pharmacyStatus',
+      dataIndex: 'goRushStatus',
+      key: 'goRushStatus',
       render: status => {
         let color = '';
         switch (status) {
@@ -1835,12 +1899,13 @@ const columns = [
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
-        <a 
-          href={`/orders/${record._id}`} 
+        <Button 
+          type="link" 
+          onClick={() => navigate(`/orders/${record._id}`)}
           style={styles.actionButton}
         >
           View Details
-        </a>
+        </Button>
       ),
       width: 100,
     },
@@ -2241,31 +2306,42 @@ const columns = [
     } 
     key="noFormCreated" 
   />
+    <TabPane 
+    tab={
+      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <CloseCircleOutlined />
+        Cancelled
+        <Tag color="red" style={styles.tabBadge}>{jobMethodStats.Cancelled}</Tag>
+      </span>
+    } 
+    key="Cancelled" 
+  />
 </Tabs>
 
           <Spin spinning={loading}>
-            <Table
-              columns={columns}
-              dataSource={getFilteredOrdersByTab()}
-              rowKey="_id"
-              size="middle"
-              scroll={{ x: 800 }}
-              rowSelection={{
-                type: 'checkbox',
-                ...rowSelection,
-              }}
-              pagination={{
-                pageSize: 15,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} orders`,
-              }}
-              style={{
-                ...styles.table,
-                border: '1px solid #f0f0f0',
-                borderRadius: '8px',
-              }}
-            />
+<Table
+  columns={columns}
+  dataSource={getFilteredOrdersByTab()}
+  rowKey="_id"
+  size="middle"
+  scroll={{ x: 1500 }}
+  rowSelection={{
+    type: 'checkbox',
+    ...rowSelection,
+  }}
+  pagination={{
+    pageSize: 15,
+    showSizeChanger: true,
+    pageSizeOptions: ['15', '30', '50', '100'],
+    showQuickJumper: true,
+    showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} orders`,
+  }}
+  style={{
+    ...styles.table,
+    border: '1px solid #f0f0f0',
+    borderRadius: '8px',
+  }}
+/>
           </Spin>
         </Card>
 
