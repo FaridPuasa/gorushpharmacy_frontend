@@ -178,7 +178,7 @@ const handleSaveWithCollectionDate = async () => {
       };
 
       const updatePromises = orderIds.map(orderId => 
-        axios.put(`/api/orders/${orderId}/collection-date`, {
+        axios.put(`https://grpharmacyappserver.onrender.com/api/orders/${orderId}/collection-date`, {
           collectionDate: dateStr
         }, config).catch(e => {
           console.error(`Failed to update order ${orderId}:`, e.response?.data);
@@ -478,7 +478,7 @@ const [jobMethodStats, setJobMethodStats] = useState({
 const fetchSavedForms = async () => {
   try {
     setFormsLoading(true);
-    const response = await axios.get('/api/gr_dms/forms');
+    const response = await axios.get('https://grpharmacyappserver.onrender.com/api/gr_dms/forms');
     if (response.data.success && response.data.forms) {
       // Process the forms data to ensure it has all required fields
       const processedForms = response.data.forms.map(form => ({
@@ -506,7 +506,7 @@ useEffect(() => {
   const fetchMohOrders = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/orders?role=moh', {
+      const response = await fetch('https://grpharmacyappserver.onrender.com/api/orders?role=moh', {
         headers: {
           'X-User-Role': 'gorush'
         }
@@ -536,7 +536,7 @@ useEffect(() => {
 
   const fetchSavedOrderIds = async () => {
     try {
-      const response = await axios.get('/api/gr_dms/saved-orders');
+      const response = await axios.get('https://grpharmacyappserver.onrender.com/api/gr_dms/saved-orders');
       if (response.data.success) {
         setSavedOrders(response.data.orderIds);
       }
@@ -1130,7 +1130,7 @@ const generatePackingListHTML = (previewData) => {
             data: packingListData
           }, '*');
         } else {
-          const fallbackUrl = '/api/export-packing-list?data=' + packingListData;
+          const fallbackUrl = 'https://grpharmacyappserver.onrender.com/api/export-packing-list?data=' + packingListData;
           window.open(fallbackUrl, '_blank');
         }
       } catch (error) {
@@ -1160,7 +1160,7 @@ const handleDownloadPackingList = (showPreview = false) => {
 
 const reDownloadExcelFromForm = async (formId) => {
   try {
-    const response = await axios.get(`/api/gr_dms/forms/${formId}`);
+    const response = await axios.get(`https://grpharmacyappserver.onrender.com/api/gr_dms/forms/${formId}`);
     
     if (response.data.success && response.data.form?.previewData) {
       const savedPreviewData = response.data.form.previewData;
@@ -1269,7 +1269,7 @@ const handleSaveToDMS = async (batchValue = 1) => {
     // Optional: Generate HTML preview
     const htmlPreview = generateHTMLPreview(completePreviewData);
     
-    const response = await axios.post('/api/gr_dms/forms', {
+    const response = await axios.post('https://grpharmacyappserver.onrender.com/api/gr_dms/forms', {
       formName: formName,
       formDate: dayjs().format('DD-MM-YYYY'),
       batchNo: batchValue.toString(),
@@ -1516,7 +1516,7 @@ const calculateJobMethodStats = (orders) => {
     setBulkUpdateLoading(true);
 
     try {
-      const response = await fetch('/api/orders/bulk-collection-date', {
+      const response = await fetch('https://grpharmacyappserver.onrender.com/api/orders/bulk-collection-date', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1541,7 +1541,7 @@ const calculateJobMethodStats = (orders) => {
       setTrackingNumbers('');
       setIsCollectionModalVisible(false);
 
-      const ordersResponse = await fetch('/api/orders?role=moh');
+      const ordersResponse = await fetch('https://grpharmacyappserver.onrender.com/api/orders?role=moh');
       const ordersData = await ordersResponse.json();
       if (ordersResponse.ok) {
         setOrders(ordersData);
@@ -1594,7 +1594,7 @@ const handleViewSavedManifest = async (orderId) => {
     console.log('Looking for manifest with orderId:', orderId);
     setLoading(true);
     
-    const response = await axios.get(`/api/gr_dms/forms/by-order/${orderId}`);
+    const response = await axios.get(`https://grpharmacyappserver.onrender.com/api/gr_dms/forms/by-order/${orderId}`);
     console.log('API Response:', response.data);
     
     if (response.data.success && response.data.form) {
