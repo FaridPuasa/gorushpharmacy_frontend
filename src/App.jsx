@@ -56,6 +56,7 @@ function App() {
     return children;
   };
 
+
   return (
     <Router>
       <Routes>
@@ -69,8 +70,15 @@ function App() {
           )
         } />
         
-        {/* Protected routes under Layout */}
+        {/* Protected routes under Layout - now includes the root path */}
         <Route path="/" element={<Layout />}>
+          <Route index element={
+            userRole ? (
+              userRole === 'jpmc' ? <Navigate to="/today" replace /> : <Navigate to="/dashboard" replace />
+            ) : (
+              <Navigate to="/pharmacylogin" replace />
+            )
+          } />
           <Route path="orders" element={
             <ProtectedRoute allowedRoles={['gorush', 'jpmc', 'moh']}>
               <OrdersPage />
@@ -113,8 +121,7 @@ function App() {
           } />
         </Route>
         
-        {/* Redirect root and any unmatched routes to login */}
-        <Route path="/" element={<Navigate to="/pharmacylogin" replace />} />
+        {/* Catch-all route for unmatched paths */}
         <Route path="*" element={<Navigate to="/pharmacylogin" replace />} />
       </Routes>
     </Router>
