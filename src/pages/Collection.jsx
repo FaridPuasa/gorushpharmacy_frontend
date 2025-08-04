@@ -677,7 +677,7 @@ const currentOrders = () => {
   const fetchCollectionDates = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5050/api/collection-dates', {
+      const response = await fetch('https://grpharmacyappserver.onrender.com/api/collection-dates', {
         headers: {
           'X-User-Role': userRole
         }
@@ -696,7 +696,7 @@ const currentOrders = () => {
 
   const fetchOrdersWithoutCollectionDates = async () => {
     try {
-      const response = await fetch('http://localhost:5050/api/orders', {
+      const response = await fetch('https://grpharmacyappserver.onrender.com/api/orders', {
         headers: {
           'X-User-Role': userRole
         }
@@ -788,7 +788,7 @@ const renderDateGroup = (dateString, dateOrders) => {
   const fetchOrdersForDate = async (dateString) => {
     try {
       const response = await fetch(
-        `http://localhost:5050/api/orders/collection-dates?date=${dateString}`,
+        `https://grpharmacyappserver.onrender.com/api/orders/collection-dates?date=${dateString}`,
         {
           headers: {
             'X-User-Role': userRole
@@ -852,8 +852,8 @@ const filterOrders = () => {
     }
 
     const endpoint = statusType === 'pharmacyStatus'
-      ? `http://localhost:5050/api/orders/${orderId}/pharmacy-status`
-      : `http://localhost:5050/api/orders/${orderId}/go-rush-status`;
+      ? `https://grpharmacyappserver.onrender.com/api/orders/${orderId}/pharmacy-status`
+      : `https://grpharmacyappserver.onrender.com/api/orders/${orderId}/go-rush-status`;
 
     try {
       const response = await fetch(endpoint, {
@@ -881,7 +881,7 @@ const filterOrders = () => {
     if (!status || selectedOrders.length === 0 || userRole !== 'gorush') return;
     
     try {
-      const response = await fetch('http://localhost:5050/api/orders/bulk-go-rush-status', {
+      const response = await fetch('https://grpharmacyappserver.onrender.com/api/orders/bulk-go-rush-status', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -926,7 +926,7 @@ const filterOrders = () => {
 
   const handleSaveCollectionDate = async (orderId) => {
     try {
-      const response = await fetch(`http://localhost:5050/api/orders/${orderId}/collection-date`, {
+      const response = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${orderId}/collection-date`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

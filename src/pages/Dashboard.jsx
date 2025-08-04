@@ -37,13 +37,13 @@ const Dashboard = () => {
     setError(null);
     try {
       const [ordersRes, customersRes] = await Promise.all([
-        fetch('http://localhost:5050/api/orders', {
+        fetch('https://grpharmacyappserver.onrender.com/api/orders', {
           headers: {
             'Content-Type': 'application/json',
             'X-User-Role': userRole || 'jpmc'
           }
         }),
-        fetch('http://localhost:5050/api/customers', {
+        fetch('https://grpharmacyappserver.onrender.com/api/customers', {
           headers: {
             'Content-Type': 'application/json',
             'X-User-Role': userRole || 'jpmc'
@@ -75,7 +75,7 @@ const Dashboard = () => {
   const fetchCustomerOrders = async (patientNumber) => {
     setLoadingOrders(true);
     try {
-      const response = await fetch(`http://localhost:5050/api/customers/${patientNumber}/orders`, {
+      const response = await fetch(`https://grpharmacyappserver.onrender.com/api/customers/${patientNumber}/orders`, {
         headers: {
           'Content-Type': 'application/json',
           'X-User-Role': userRole || 'jpmc'

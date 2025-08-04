@@ -262,7 +262,7 @@ const ManifestViewer = () => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [exporting, setExporting] = useState(false);
 
-  const API_BASE_URL = 'http://localhost:5050';
+  const API_BASE_URL = 'https://grpharmacyappserver.onrender.com';
 
   useEffect(() => {
     fetchManifests();
