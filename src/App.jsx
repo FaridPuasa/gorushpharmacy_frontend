@@ -59,6 +59,9 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Root redirect */}
+        <Route path="/" element={<Navigate to="/pharmacylogin" replace />} />
+        
         {/* Login route - shows password modal */}
         <Route path="/pharmacylogin" element={
           userRole ? (
@@ -70,51 +73,64 @@ function App() {
         } />
         
         {/* Protected routes under Layout */}
-        <Route path="/" element={<Layout />}>
-          <Route path="orders" element={
+        <Route path="/orders" element={
+          <Layout>
             <ProtectedRoute allowedRoles={['gorush', 'jpmc', 'moh']}>
               <OrdersPage />
             </ProtectedRoute>
-          } />
-          <Route path="dashboard" element={
+          </Layout>
+        } />
+        <Route path="/dashboard" element={
+          <Layout>
             <ProtectedRoute allowedRoles={['gorush']}>
               <Dashboard />
             </ProtectedRoute>
-          } />
-          <Route path="customers" element={
+          </Layout>
+        } />
+        <Route path="/customers" element={
+          <Layout>
             <ProtectedRoute allowedRoles={['gorush']}>
               <AllCustomersPage />
             </ProtectedRoute>
-          } />
-          <Route path="mohorders" element={
+          </Layout>
+        } />
+        <Route path="/mohorders" element={
+          <Layout>
             <ProtectedRoute allowedRoles={['gorush']}>
               <MohOrdersDashboard />
             </ProtectedRoute>
-          } />
-          <Route path="today" element={
+          </Layout>
+        } />
+        <Route path="/today" element={
+          <Layout>
             <ProtectedRoute allowedRoles={['gorush', 'jpmc', 'moh']}>
               <Today />
             </ProtectedRoute>
-          } />
-          <Route path="collection" element={
+          </Layout>
+        } />
+        <Route path="/collection" element={
+          <Layout>
             <ProtectedRoute allowedRoles={['gorush', 'jpmc', 'moh']}>
               <CollectionDatesPage />
             </ProtectedRoute>
-          } />
-          <Route path="manifestviewer" element={
+          </Layout>
+        } />
+        <Route path="/manifestviewer" element={
+          <Layout>
             <ProtectedRoute allowedRoles={['gorush']}>
               <ManifestViewer />
             </ProtectedRoute>
-          } />
-          <Route path="orders/:id" element={
+          </Layout>
+        } />
+        <Route path="/orders/:id" element={
+          <Layout>
             <ProtectedRoute allowedRoles={['gorush', 'jpmc', 'moh']}>
               <OrderDetails />
             </ProtectedRoute>
-          } />
-        </Route>
+          </Layout>
+        } />
         
-        {/* Redirect root and any unmatched routes to login */}
-        <Route path="/" element={<Navigate to="/pharmacylogin" replace />} />
+        {/* Catch all unmatched routes */}
         <Route path="*" element={<Navigate to="/pharmacylogin" replace />} />
       </Routes>
     </Router>
