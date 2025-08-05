@@ -614,6 +614,11 @@ const styles = {
 
 const CollectionDatesPage = () => {
   const [dates, setDates] = useState([]);
+    const [year, setYear] = useState(new Date().getFullYear());
+  const [month, setMonth] = useState(new Date().getMonth() + 1);
+  const [day, setDay] = useState(null);
+  const [trackingSearch, setTrackingSearch] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -634,6 +639,7 @@ const CollectionDatesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const navigate = useNavigate();
+  
 
     const togglePharmacyType = (dateString, pharmacyType) => {
     setExpandedPharmacyTypes(prev => ({

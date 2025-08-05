@@ -470,16 +470,19 @@ const Dashboard = () => {
                       // First filter: order must have logs
                       if (!order.logs || order.logs.length === 0) return false;
                       
-                      // Second filter: order must have at least one non-system log
-                      const nonSystemLogs = order.logs.filter(log => 
-                        log.createdBy && log.createdBy.toLowerCase() !== 'system'
-                      );
+                     const nonSystemLogs = order.logs.filter(log => 
+  log.createdBy &&
+  log.createdBy.toLowerCase() !== 'system' &&
+  log.createdBy.toLowerCase() !== 'gorush'
+);
+
                       return nonSystemLogs.length > 0;
                     })
                     .map(order => {
                       // Get only non-system logs for this order
                       const nonSystemLogs = order.logs.filter(log => 
                         log.createdBy && log.createdBy.toLowerCase() !== 'system'
+                        
                       );
                       
                       // Get the most recent non-system log
