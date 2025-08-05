@@ -924,31 +924,47 @@ const filterOrders = () => {
     setNewCollectionDate(currentDate || '');
   };
 
-  const handleSaveCollectionDate = async (orderId) => {
-    try {
-      const response = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${orderId}/collection-date`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          collectionDate: newCollectionDate || null
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+const handleSaveCollectionDate = async (orderId) => {
+  try {
+    // Format the date correctly before sending to the backend
+    let formattedDate = '';
+    if (newCollectionDate) {
+      // Parse the input date (assuming format is YYYY-MM-DD from date input)
+      const dateParts = newCollectionDate.split('-');
+      if (dateParts.length === 3) {
+        const year = dateParts[0];
+        const month = dateParts[1];
+        const day = dateParts[2];
+        formattedDate = `${day}-${month}-${year}`; // Format as DD-MM-YYYY for backend
+      } else {
+        throw new Error('Invalid date format');
       }
-      
-      setEditingOrderId(null);
-      setNewCollectionDate('');
-      refreshCurrentView();
-      fetchCollectionDates();
-    } catch (error) {
-      console.error('Error updating collection date:', error);
-      alert('Error updating collection date. Please try again.');
     }
-  };
+
+    const response = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${orderId}/collection-date`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        collectionDate: newCollectionDate ? formattedDate : null,
+        collectionStatus: newCollectionDate ? 'scheduled' : 'pending'
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    setEditingOrderId(null);
+    setNewCollectionDate('');
+    refreshCurrentView();
+    fetchCollectionDates();
+  } catch (error) {
+    console.error('Error updating collection date:', error);
+    alert(`Error updating collection date: ${error.message}`);
+  }
+};
 
   const handleCancelEdit = () => {
     setEditingOrderId(null);
