@@ -325,27 +325,85 @@ const fetchDetrackData = async (trackingNumber) => {
   }
 };
 
-  const handleStatusUpdate = async (statusType, newStatus) => {
-    try {
-      const endpoint = statusType === 'goRush' ? 'go-rush-status' : 'pharmacy-status';
-      const response = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${id}/${endpoint}`, {
-        method: 'PUT',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({ status: newStatus }),
-      });
+// Updated handleStatusUpdate function for the frontend
+const handleStatusUpdate = async (statusType, newStatus) => {
+  try {
+    const endpoint = statusType === 'goRush' ? 'go-rush-status' : 'pharmacy-status';
+    
+    // First update our database
+    const response = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${id}/${endpoint}`, {
+      method: 'PUT',
+      headers: getRequestHeaders(),
+      body: JSON.stringify({ 
+        status: newStatus,
+        currentStatus: newStatus.toLowerCase() === 'cancelled' ? 'Cancelled' : undefined
+      }),
+    });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to update status' }));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const updatedOrder = await response.json();
-      setOrder(updatedOrder);
-    } catch (err) {
-      console.error('Error updating status:', err);
-      alert(`Error updating status: ${err.message}`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Failed to update status' }));
+      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
     }
-  };
+    
+    const updatedOrder = await response.json();
+    setOrder(updatedOrder);
+
+    // If status was changed to cancelled and we have a tracking number, call backend to update DeTrack
+    if (newStatus.toLowerCase() === 'cancelled' && order.doTrackingNumber) {
+      try {
+        console.log('Attempting to cancel DeTrack job:', order.doTrackingNumber);
+        
+        const detrackResponse = await fetch(
+          `https://grpharmacyappserver.onrender.com/api/detrack/${order.doTrackingNumber}/cancel`, 
+          {
+            method: 'PUT',
+            headers: getRequestHeaders()
+          }
+        );
+        
+        if (!detrackResponse.ok) {
+          const errorData = await detrackResponse.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('Failed to update DeTrack status:', errorData);
+          
+          // Show a warning but don't fail the entire operation
+          alert(`Order was cancelled successfully, but DeTrack update had issues: ${errorData.error || 'Unknown error'}\n\nThe order is still cancelled in our system.`);
+        } else {
+          const detrackData = await detrackResponse.json();
+          console.log('DeTrack cancellation result:', detrackData);
+          
+          if (detrackData.detrackError) {
+            alert(`Order cancelled successfully.\n\nNote: ${detrackData.message}`);
+          } else {
+            // Show success message only if everything worked
+            alert('Order cancelled successfully and DeTrack has been updated.');
+          }
+        }
+
+        // Refresh order data after cancellation attempt
+        const updatedOrderResponse = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${id}`, {
+          method: 'GET',
+          headers: getRequestHeaders()
+        });
+        
+        if (updatedOrderResponse.ok) {
+          const updatedOrderData = await updatedOrderResponse.json();
+          setOrder(updatedOrderData);
+        }
+
+      } catch (detrackError) {
+        console.error('Error updating DeTrack status:', detrackError);
+        // Show a user-friendly warning
+        alert(`Order was cancelled successfully in our system.\n\nHowever, there was an issue updating the delivery service: ${detrackError.message}\n\nPlease contact the delivery service directly if needed.`);
+      }
+    } else {
+      // For non-cancellation status updates, show simple success
+      alert(`Status updated to: ${newStatus}`);
+    }
+  } catch (err) {
+    console.error('Error updating status:', err);
+    alert(`Error updating status: ${err.message}`);
+  }
+};
 
   const handleAddLog = async () => {
     if (!logNote.trim() || !logCategory || !logCreatedBy.trim()) {
