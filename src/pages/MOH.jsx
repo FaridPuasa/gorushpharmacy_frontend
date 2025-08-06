@@ -294,6 +294,18 @@ useEffect(() => {
     },
   ];
 
+  const getNumberPrefix = (jobMethod) => {
+  switch(jobMethod) {
+    case 'TTG': return 'T';
+    case 'KB': return 'K';
+    case 'Standard': return 'S';
+    case 'Express': return 'E';
+    case 'Immediate': return 'I';
+    case 'Self Collect': return 'SC';
+    default: return 'O'; // Others
+  }
+};
+
   return (
     <Modal
       title={data?.savedToDMS ? `Saved Manifest: ${data?.summary?.batch || ''}` : "Preview Orders"}
@@ -317,44 +329,43 @@ useEffect(() => {
             {collectionDate ? 'Generate Manifest' : 'Set Collection Date & Generate'}
           </Button>
         ),
-
-<Tooltip 
-  title={!data?.savedToDMS ? "Please save the manifest first" : ""}
-  placement="top"
->
-<div>
-<Button 
-  key="preview-packing" 
-  type="default" 
-  onClick={onPreviewPackingList}
-  disabled={!data?.savedToDMS || !safeData?.rows || safeData.rows.length === 0}
-  icon={<EyeOutlined />}
-  style={{ 
-    marginLeft: 8,
-    ...(!data?.savedToDMS ? styles.disabledButton : {}) 
-  }}
->
-  Preview Packing List
-</Button>
-</div>
-</Tooltip>,
-<Tooltip 
-  title={!data?.savedToDMS ? "Please save the manifest first" : ""}
-  placement="top"
->
-<div>
-<Button 
-  key="download" 
-  type="primary" 
-  onClick={onDownloadExcel}
-  disabled={!data?.savedToDMS || !safeData?.rows || safeData.rows.length === 0}
-  icon={<DownloadOutlined />}
-  style={!data?.savedToDMS ? styles.disabledButton : {}}
->
-  Download Excel
-</Button>
-</div>
-</Tooltip>
+        <Tooltip 
+          title={!data?.savedToDMS ? "Please save the manifest first" : ""}
+          placement="top"
+        >
+          <div>
+            <Button 
+              key="preview-packing" 
+              type="default" 
+              onClick={onPreviewPackingList}
+              disabled={!data?.savedToDMS || !safeData?.rows || safeData.rows.length === 0}
+              icon={<EyeOutlined />}
+              style={{ 
+                marginLeft: 8,
+                ...(!data?.savedToDMS ? styles.disabledButton : {}) 
+              }}
+            >
+              Preview Packing List
+            </Button>
+          </div>
+        </Tooltip>,
+        <Tooltip 
+          title={!data?.savedToDMS ? "Please save the manifest first" : ""}
+          placement="top"
+        >
+          <div>
+            <Button 
+              key="download" 
+              type="primary" 
+              onClick={onDownloadExcel}
+              disabled={!data?.savedToDMS || !safeData?.rows || safeData.rows.length === 0}
+              icon={<DownloadOutlined />}
+              style={!data?.savedToDMS ? styles.disabledButton : {}}
+            >
+              Download Excel
+            </Button>
+          </div>
+        </Tooltip>
       ]}
     >
       {!data?.savedToDMS && (
@@ -366,8 +377,6 @@ useEffect(() => {
             style={{ width: 200, marginLeft: 8 }}
             format="DD-MM-YYYY"
             placeholder="Select collection date"
-            disabledDate={(current) => {
-            }}
           />
           {collectionDate && (
             <Tag color="blue" style={{ marginLeft: 8 }}>
@@ -413,36 +422,33 @@ useEffect(() => {
                         <option value={3}>3</option>
                       </select>
                       <span style={{ marginLeft: '8px', color: '#666' }}>
-                        (B{batchValue} {safeData.meta?.startNo}-{safeData.meta?.endNo})
+                        (B{batchValue} {getNumberPrefix(safeData.meta?.jobMethod)}{startNumber}-{getNumberPrefix(safeData.meta?.jobMethod)}{startNumber + safeData.rows.length - 1})
                       </span>
                     </li>
-{(safeData.meta?.jobMethod === 'TTG' || safeData.meta?.jobMethod === 'KB') && (
-  <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-    Start Number:
-    <Input
-      type="number"
-      min={1}
-      value={startNumber}
-      onChange={(e) => {
-        const newStartNumber = Number(e.target.value);
-        setStartNumber(newStartNumber);
-      }}
-      style={{ 
-        width: '80px',
-        padding: '4px 8px',
-        border: '1px solid #d9d9d9',
-        borderRadius: '4px',
-        fontSize: '14px'
-      }}
-    />
-    <span style={{ marginLeft: '8px', color: '#666' }}>
-      Will generate: {safeData.meta?.jobMethod === 'TTG' ? 'T' : 'K'}
-      {startNumber} to {safeData.meta?.jobMethod === 'TTG' ? 'T' : 'K'}
-      {startNumber + safeData.rows.length - 1}
-    </span>
-  </li>
-)}
-
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      Start Number:
+                      <Input
+                        type="number"
+                        min={1}
+                        value={startNumber}
+                        onChange={(e) => {
+                          const newStartNumber = Number(e.target.value);
+                          setStartNumber(newStartNumber);
+                        }}
+                        style={{ 
+                          width: '80px',
+                          padding: '4px 8px',
+                          border: '1px solid #d9d9d9',
+                          borderRadius: '4px',
+                          fontSize: '14px'
+                        }}
+                      />
+                      <span style={{ marginLeft: '8px', color: '#666' }}>
+                        Will generate: {getNumberPrefix(safeData.meta?.jobMethod)}
+                        {startNumber} to {getNumberPrefix(safeData.meta?.jobMethod)}
+                        {startNumber + safeData.rows.length - 1}
+                      </span>
+                    </li>
                   </>
                 )}
                 {data?.savedToDMS && (
@@ -464,6 +470,7 @@ useEffect(() => {
   );
 };
 
+
 const MohOrdersDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [urlInitialized, setUrlInitialized] = useState(false);
@@ -483,6 +490,7 @@ const [formsLoading, setFormsLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
+// Update the jobMethodStats state to include the new categories
 const [jobMethodStats, setJobMethodStats] = useState({
   all: 0,
   Standard: 0,
@@ -490,11 +498,16 @@ const [jobMethodStats, setJobMethodStats] = useState({
   Immediate: 0,
   'Self Collect': 0,
   TTG: 0,
-    Cancelled: 0,
   KB: 0,
   Others: 0,
-  noCollectionDate: 0,  // New metric
-  noFormCreated: 0      // New metric
+  Cancelled: 0,
+  noCollectionDate: 0,
+  noFormCreated: 0,
+  // New categories
+  StandardNoForm: 0,
+  ExpressNoForm: 0,
+  TTGNoForm: 0,
+  KBNoForm: 0
 });
 
   const [activeTab, setActiveTab] = useState('all');
@@ -630,47 +643,41 @@ useEffect(() => {
 
 
 const preparePreviewData = (selectedRows, currentStartNumber) => {
-  // Determine the actual job method based on district and hospital conditions
+  // Determine the actual job method
   const firstRow = selectedRows[0];
   let jobMethod;
   
-  // Check for TTG first (Tutong district going to PMMH)
   if (firstRow?.appointmentDistrict === "Tutong" && firstRow?.sendOrderTo === "PMMH") {
     jobMethod = 'TTG';
-  }
-  // Check for KB (Belait district going to SSBH) 
-  else if (firstRow?.appointmentDistrict === "Belait" && firstRow?.sendOrderTo === "SSBH") {
+  } else if (firstRow?.appointmentDistrict === "Belait" && firstRow?.sendOrderTo === "SSBH") {
     jobMethod = 'KB';
-  }
-  // Otherwise use the original jobMethod
-  else {
+  } else {
     jobMethod = firstRow?.jobMethod || 'OTH';
   }
   
   const batchNo = '1';
   
-  // For TTG and KB, use the current start number from state
-  let startNo, endNo;
-  if (jobMethod === 'TTG') {
-    startNo = `T${currentStartNumber}`;
-    endNo = `T${currentStartNumber + selectedRows.length - 1}`;
-  } else if (jobMethod === 'KB') {
-    startNo = `K${currentStartNumber}`;
-    endNo = `K${currentStartNumber + selectedRows.length - 1}`;
-  } else {
-    // For other methods, use default numbering
-    startNo = 'S1';
-    endNo = `S${selectedRows.length}`;
-  }    
+  // Determine numbering prefix based on job method
+  let prefix = '';
+  switch(jobMethod) {
+    case 'TTG': prefix = 'T'; break;
+    case 'KB': prefix = 'K'; break;
+    case 'Standard': prefix = 'S'; break;
+    case 'Express': prefix = 'E'; break;
+    case 'Immediate': prefix = 'I'; break;
+    case 'Self Collect': prefix = 'SC'; break;
+    default: prefix = 'O'; // Others
+  }
 
+  // Generate start and end numbers
+  const startNo = `${prefix}${currentStartNumber}`;
+  const endNo = `${prefix}${currentStartNumber + selectedRows.length - 1}`;
   const formDate = dayjs().format('DD.MM.YY');
 
   return {
     rows: selectedRows.map((row, index) => ({
       key: row._id,
-      number: jobMethod === 'TTG' ? `T${currentStartNumber + index}` : 
-             jobMethod === 'KB' ? `K${currentStartNumber + index}` : 
-             `${getDeliveryCodePrefix(jobMethod)}${index + 1}`,
+      number: `${prefix}${currentStartNumber + index}`,
       patientName: row.receiverName || 'N/A',
       trackingNumber: row.doTrackingNumber || 'N/A',
       address: row.receiverAddress || 'N/A',
@@ -1420,14 +1427,18 @@ const calculateJobMethodStats = (orders) => {
     Others: 0,
     Cancelled: 0,
     noCollectionDate: 0,
-    noFormCreated: 0
+    noFormCreated: 0,
+    StandardNoForm: 0,
+    ExpressNoForm: 0,
+    TTGNoForm: 0,
+    KBNoForm: 0
   };
 
   orders.forEach(order => {
     // First check if order is cancelled
     if (order.goRushStatus === 'cancelled') {
       stats.Cancelled++;
-      return; // Skip further checks for cancelled orders
+      return; // Skip all other counting for cancelled orders
     }
 
     // Count orders without collection date (only non-cancelled)
@@ -1435,18 +1446,29 @@ const calculateJobMethodStats = (orders) => {
       stats.noCollectionDate++;
     }
 
-    // Count orders not in any saved form (only non-cancelled)
-    if (!savedOrders.includes(order._id)) {
+    // Determine if order has no form created (only non-cancelled)
+    const noForm = !savedOrders.includes(order._id);
+    if (noForm) {
       stats.noFormCreated++;
     }
 
     // Count job methods (only non-cancelled)
     if (order.appointmentDistrict === "Tutong" && order.sendOrderTo === "PMMH") {
       stats.TTG++;
+      if (noForm) stats.TTGNoForm++;
     } else if (order.appointmentDistrict === "Belait" && order.sendOrderTo === "SSBH") {
       stats.KB++;
-    } else if (['Standard', 'Express', 'Immediate', 'Self Collect'].includes(order.jobMethod)) {
-      stats[order.jobMethod]++;
+      if (noForm) stats.KBNoForm++;
+    } else if (order.jobMethod === 'Standard') {
+      stats.Standard++;
+      if (noForm) stats.StandardNoForm++;
+    } else if (order.jobMethod === 'Express') {
+      stats.Express++;
+      if (noForm) stats.ExpressNoForm++;
+    } else if (order.jobMethod === 'Immediate') {
+      stats.Immediate++;
+    } else if (order.jobMethod === 'Self Collect') {
+      stats['Self Collect']++;
     } else {
       stats.Others++;
     }
@@ -1457,6 +1479,7 @@ const calculateJobMethodStats = (orders) => {
   
   setJobMethodStats(stats);
 };
+
 
   const getJobMethodIcon = (jobMethod) => {
     switch (jobMethod) {
@@ -1493,45 +1516,94 @@ const getFilteredOrdersByTab = () => {
   // Apply tab filter
   switch (activeTab) {
     case 'Standard':
-      filtered = filtered.filter(o => o.jobMethod === 'Standard');
+      filtered = filtered.filter(o => 
+        o.jobMethod === 'Standard' && o.goRushStatus !== 'cancelled'
+      );
       break;
     case 'Express':
-      filtered = filtered.filter(o => o.jobMethod === 'Express');
+      filtered = filtered.filter(o => 
+        o.jobMethod === 'Express' && o.goRushStatus !== 'cancelled'
+      );
       break;
     case 'Immediate':
-      filtered = filtered.filter(o => o.jobMethod === 'Immediate');
+      filtered = filtered.filter(o => 
+        o.jobMethod === 'Immediate' && o.goRushStatus !== 'cancelled'
+      );
       break;
     case 'Self Collect':
-      filtered = filtered.filter(o => o.jobMethod === 'Self Collect');
+      filtered = filtered.filter(o => 
+        o.jobMethod === 'Self Collect' && o.goRushStatus !== 'cancelled'
+      );
       break;
     case 'TTG':
       filtered = filtered.filter(o => 
-        o.appointmentDistrict === "Tutong" && o.sendOrderTo === "PMMH"
+        o.appointmentDistrict === "Tutong" && 
+        o.sendOrderTo === "PMMH" &&
+        o.goRushStatus !== 'cancelled'
       );
       break;
     case 'KB':
       filtered = filtered.filter(o => 
-        o.appointmentDistrict === "Belait" && o.sendOrderTo === "SSBH"
+        o.appointmentDistrict === "Belait" && 
+        o.sendOrderTo === "SSBH" &&
+        o.goRushStatus !== 'cancelled'
       );
       break;
     case 'noCollectionDate':
-      filtered = filtered.filter(o => !o.collectionDate);
+      filtered = filtered.filter(o => 
+        !o.collectionDate && 
+        o.goRushStatus !== 'cancelled'
+      );
       break;
     case 'noFormCreated':
-      filtered = filtered.filter(o => !savedOrders.includes(o._id));
+      filtered = filtered.filter(o => 
+        !savedOrders.includes(o._id) && 
+        o.goRushStatus !== 'cancelled'
+      );
       break;
-          case 'Cancelled':
+    case 'StandardNoForm':
+      filtered = filtered.filter(o => 
+        o.jobMethod === 'Standard' && 
+        !savedOrders.includes(o._id) && 
+        o.goRushStatus !== 'cancelled'
+      );
+      break;
+    case 'ExpressNoForm':
+      filtered = filtered.filter(o => 
+        o.jobMethod === 'Express' && 
+        !savedOrders.includes(o._id) && 
+        o.goRushStatus !== 'cancelled'
+      );
+      break;
+    case 'TTGNoForm':
+      filtered = filtered.filter(o => 
+        o.appointmentDistrict === "Tutong" && 
+        o.sendOrderTo === "PMMH" &&
+        !savedOrders.includes(o._id) && 
+        o.goRushStatus !== 'cancelled'
+      );
+      break;
+    case 'KBNoForm':
+      filtered = filtered.filter(o => 
+        o.appointmentDistrict === "Belait" && 
+        o.sendOrderTo === "SSBH" &&
+        !savedOrders.includes(o._id) && 
+        o.goRushStatus !== 'cancelled'
+      );
+      break;
+    case 'Cancelled':
       filtered = filtered.filter(o => o.goRushStatus === 'cancelled');
       break;
     case 'Others':
       filtered = filtered.filter(o => 
         !['Standard', 'Express', 'Immediate', 'Self Collect'].includes(o.jobMethod) &&
         !(o.appointmentDistrict === "Tutong" && o.sendOrderTo === "PMMH") &&
-        !(o.appointmentDistrict === "Belait" && o.sendOrderTo === "SSBH")
+        !(o.appointmentDistrict === "Belait" && o.sendOrderTo === "SSBH") &&
+        o.goRushStatus !== 'cancelled'
       );
       break;
-    default:
-      // No additional filtering needed for 'all' tab
+    default: // 'all' tab
+      // No additional filtering needed, but we could add cancelled filter if desired
       break;
   }
   
@@ -2315,6 +2387,46 @@ const columns = [
       </span>
     } 
     key="Cancelled" 
+  />
+    <TabPane 
+    tab={
+      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <FileExclamationOutlined />
+        Standard (No Form)
+        <Tag color="orange" style={styles.tabBadge}>{jobMethodStats.StandardNoForm}</Tag>
+      </span>
+    } 
+    key="StandardNoForm" 
+  />
+  <TabPane 
+    tab={
+      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <FileExclamationOutlined />
+        Express (No Form)
+        <Tag color="orange" style={styles.tabBadge}>{jobMethodStats.ExpressNoForm}</Tag>
+      </span>
+    } 
+    key="ExpressNoForm" 
+  />
+  <TabPane 
+    tab={
+      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <FileExclamationOutlined />
+        TTG (No Form)
+        <Tag color="orange" style={styles.tabBadge}>{jobMethodStats.TTGNoForm}</Tag>
+      </span>
+    } 
+    key="TTGNoForm" 
+  />
+  <TabPane 
+    tab={
+      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <FileExclamationOutlined />
+        KB (No Form)
+        <Tag color="orange" style={styles.tabBadge}>{jobMethodStats.KBNoForm}</Tag>
+      </span>
+    } 
+    key="KBNoForm" 
   />
 </Tabs>
 
