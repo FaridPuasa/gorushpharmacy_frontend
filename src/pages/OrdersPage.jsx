@@ -650,7 +650,7 @@ const getAgingBadgeStyle = (days) => {
                         {order.doTrackingNumber || <span style={styles.naText}>N/A</span>}
                       </td>
                       <td style={styles.td}>
-                        {order.dateTimeSubmission}
+                        {order.creationDate}
                       </td>
 <td style={styles.td}>
   {order.agingDays === 'collected' ? (

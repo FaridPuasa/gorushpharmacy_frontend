@@ -599,7 +599,7 @@ const handleStatusUpdate = async (statusType, newStatus) => {
               </div>
               <div style={styles.row}>
                 <span style={styles.label}>Created On:</span>
-                <span style={styles.value}>{order.dateTimeSubmission}</span>
+                <span style={styles.value}>{order.creationDate}</span>
               </div>
               <div style={styles.row}>
                 <span style={styles.label}>Payment Method:</span>

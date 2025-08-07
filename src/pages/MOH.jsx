@@ -1953,12 +1953,12 @@ const columns = [
     },
     {
       title: 'Created',
-      dataIndex: 'dateTimeSubmission',
-      key: 'dateTimeSubmission',
+      dataIndex: 'creationDate',
+      key: 'creationDate',
       render: (text) => formatDateTime(text),
       sorter: (a, b) => {
-        const dateA = parseMongoDate(a.dateTimeSubmission);
-        const dateB = parseMongoDate(b.dateTimeSubmission);
+        const dateA = parseMongoDate(a.creationDate);
+        const dateB = parseMongoDate(b.creationDate);
         
         if (!dateA || !dateA.isValid()) return 1;
         if (!dateB || !dateB.isValid()) return -1;
