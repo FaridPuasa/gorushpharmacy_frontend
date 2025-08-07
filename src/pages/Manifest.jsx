@@ -434,7 +434,7 @@ const exportToExcel = async () => {
 
       return {
         'Date of Form': formatDateTimeExtraction(
-          getValue('dateTimeSubmission') || 
+          getValue('creationDate') || 
           getValue('creationDate') ||
           selectedManifest.formDate
         ),

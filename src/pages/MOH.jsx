@@ -300,7 +300,7 @@ useEffect(() => {
     case 'KB': return 'K';
     case 'Standard': return 'S';
     case 'Express': return 'E';
-    case 'Immediate': return 'I';
+    case 'Immediate': return 'IMM';
     case 'Self Collect': return 'SC';
     default: return 'O'; // Others
   }
@@ -490,20 +490,17 @@ const [formsLoading, setFormsLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-// Update the jobMethodStats state to include the new categories
 const [jobMethodStats, setJobMethodStats] = useState({
   all: 0,
   Standard: 0,
   Express: 0,
   Immediate: 0,
-  'Self Collect': 0,
   TTG: 0,
   KB: 0,
   Others: 0,
   Cancelled: 0,
   noCollectionDate: 0,
   noFormCreated: 0,
-  // New categories
   StandardNoForm: 0,
   ExpressNoForm: 0,
   TTGNoForm: 0,
@@ -664,7 +661,7 @@ const preparePreviewData = (selectedRows, currentStartNumber) => {
     case 'KB': prefix = 'K'; break;
     case 'Standard': prefix = 'S'; break;
     case 'Express': prefix = 'E'; break;
-    case 'Immediate': prefix = 'I'; break;
+    case 'Immediate': prefix = 'IMM'; break;
     case 'Self Collect': prefix = 'SC'; break;
     default: prefix = 'O'; // Others
   }
@@ -1221,7 +1218,7 @@ const reDownloadExcelFromForm = async (formId) => {
           ...row,
           rawData: {
             ...row.rawData,
-            dateTimeSubmission: dayjs().format('DD.MM.YY') // Update date to today
+            creationDate: dayjs().format('DD.MM.YY') // Update date to today
           }
         }))
       }, fileName);
@@ -1395,8 +1392,8 @@ const handleDownloadExcel = () => {
     if (selectedDate) {
       const selectedDateStr = selectedDate.format('DD-MM-YYYY');
       filtered = filtered.filter(order => {
-        if (!order.dateTimeSubmission) return false;
-        const orderDate = parseMongoDate(order.dateTimeSubmission);
+        if (!order.creationDate) return false;
+        const orderDate = parseMongoDate(order.creationDate);
         if (!orderDate || !orderDate.isValid()) return false;
         return orderDate.format('DD-MM-YYYY') === selectedDateStr;
       });
@@ -1404,8 +1401,8 @@ const handleDownloadExcel = () => {
       const startDate = dateRange[0].startOf('day');
       const endDate = dateRange[1].endOf('day');
       filtered = filtered.filter(order => {
-        if (!order.dateTimeSubmission) return false;
-        const orderDate = parseMongoDate(order.dateTimeSubmission);
+        if (!order.creationDate) return false;
+        const orderDate = parseMongoDate(order.creationDate);
         if (!orderDate || !orderDate.isValid()) return false;
         return orderDate.isAfter(startDate) && orderDate.isBefore(endDate);
       });
@@ -1421,7 +1418,6 @@ const calculateJobMethodStats = (orders) => {
     Standard: 0,
     Express: 0,
     Immediate: 0,
-    'Self Collect': 0,
     TTG: 0,
     KB: 0,
     Others: 0,
@@ -1435,31 +1431,27 @@ const calculateJobMethodStats = (orders) => {
   };
 
   orders.forEach(order => {
-    // First check if order is cancelled
     if (order.goRushStatus === 'cancelled') {
       stats.Cancelled++;
-      return; // Skip all other counting for cancelled orders
+      return;
     }
 
-    // Count orders without collection date (only non-cancelled)
     if (!order.collectionDate) {
       stats.noCollectionDate++;
     }
 
-    // Determine if order has no form created (only non-cancelled)
     const noForm = !savedOrders.includes(order._id);
     if (noForm) {
       stats.noFormCreated++;
     }
 
-    // Count job methods (only non-cancelled)
     if (order.appointmentDistrict === "Tutong" && order.sendOrderTo === "PMMH") {
       stats.TTG++;
       if (noForm) stats.TTGNoForm++;
     } else if (order.appointmentDistrict === "Belait" && order.sendOrderTo === "SSBH") {
       stats.KB++;
       if (noForm) stats.KBNoForm++;
-    } else if (order.jobMethod === 'Standard') {
+    } else if (order.jobMethod === 'Standard' || order.jobMethod === 'Self Collect') {
       stats.Standard++;
       if (noForm) stats.StandardNoForm++;
     } else if (order.jobMethod === 'Express') {
@@ -1467,16 +1459,12 @@ const calculateJobMethodStats = (orders) => {
       if (noForm) stats.ExpressNoForm++;
     } else if (order.jobMethod === 'Immediate') {
       stats.Immediate++;
-    } else if (order.jobMethod === 'Self Collect') {
-      stats['Self Collect']++;
     } else {
       stats.Others++;
     }
   });
 
-  // Calculate total (including cancelled)
   stats.all = orders.length;
-  
   setJobMethodStats(stats);
 };
 
@@ -1517,7 +1505,8 @@ const getFilteredOrdersByTab = () => {
   switch (activeTab) {
     case 'Standard':
       filtered = filtered.filter(o => 
-        o.jobMethod === 'Standard' && o.goRushStatus !== 'cancelled'
+        (o.jobMethod === 'Standard' || o.jobMethod === 'Self Collect') && 
+        o.goRushStatus !== 'cancelled'
       );
       break;
     case 'Express':
@@ -1528,11 +1517,6 @@ const getFilteredOrdersByTab = () => {
     case 'Immediate':
       filtered = filtered.filter(o => 
         o.jobMethod === 'Immediate' && o.goRushStatus !== 'cancelled'
-      );
-      break;
-    case 'Self Collect':
-      filtered = filtered.filter(o => 
-        o.jobMethod === 'Self Collect' && o.goRushStatus !== 'cancelled'
       );
       break;
     case 'TTG':
@@ -1904,36 +1888,43 @@ const columns = [
       render: (text) => text || 'N/A',
       width: 120,
     },
-    {
-      title: 'Job Type',
-      dataIndex: 'jobMethod',
-      key: 'jobMethod',
-      render: (jobMethod) => (
-        <Tag 
-          icon={getJobMethodIcon(jobMethod)} 
-          color={getJobMethodColor(jobMethod)}
-          style={{ display: 'flex', alignItems: 'center', fontWeight: '500' }}
-        >
-          {['Standard', 'Express', 'Immediate', 'Self Collect'].includes(jobMethod) 
-            ? jobMethod 
-            : 'Others'}
-        </Tag>
-      ),
-      filters: [
-        { text: 'Standard', value: 'Standard' },
-        { text: 'Express', value: 'Express' },
-        { text: 'Immediate', value: 'Immediate' },
-        { text: 'Self Collect', value: 'Self Collect' },
-        { text: 'Others', value: 'Others' },
-      ],
-      onFilter: (value, record) => {
-        if (value === 'Others') {
-          return !['Standard', 'Express', 'Immediate', 'Self Collect'].includes(record.jobMethod);
-        }
-        return record.jobMethod === value;
-      },
-      width: 130,
-    },
+{
+  title: 'Job Type',
+  dataIndex: 'jobMethod',
+  key: 'jobMethod',
+  render: (jobMethod) => {
+    // Treat 'Self Collect' as 'Standard' for display
+    const displayMethod = jobMethod === 'Self Collect' ? 'Standard' : jobMethod;
+    return (
+      <Tag 
+        icon={getJobMethodIcon(displayMethod)} 
+        color={getJobMethodColor(displayMethod)}
+        style={{ display: 'flex', alignItems: 'center', fontWeight: '500' }}
+      >
+        {['Standard', 'Express', 'Immediate'].includes(displayMethod) 
+          ? displayMethod 
+          : 'Others'}
+      </Tag>
+    );
+  },
+  filters: [
+    { text: 'Standard', value: 'Standard' },
+    { text: 'Express', value: 'Express' },
+    { text: 'Immediate', value: 'Immediate' },
+    { text: 'Others', value: 'Others' },
+  ],
+  onFilter: (value, record) => {
+    if (value === 'Others') {
+      return !['Standard', 'Express', 'Immediate', 'Self Collect'].includes(record.jobMethod);
+    }
+    // Include 'Self Collect' when filtering for 'Standard'
+    if (value === 'Standard') {
+      return record.jobMethod === 'Standard' || record.jobMethod === 'Self Collect';
+    }
+    return record.jobMethod === value;
+  },
+  width: 130,
+},
     {
       title: 'Status',
       dataIndex: 'goRushStatus',
@@ -2180,16 +2171,6 @@ const columns = [
           <Col xs={24} sm={12} lg={8} xl={4}>
             <Card style={styles.statCard}>
               <Statistic 
-                title="Self Collect" 
-                value={jobMethodStats['Self Collect']} 
-                prefix={<CarOutlined />} 
-                valueStyle={{ color: '#52c41a', fontSize: '28px', fontWeight: 'bold' }} 
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={8} xl={4}>
-            <Card style={styles.statCard}>
-              <Statistic 
                 title="Standard" 
                 value={jobMethodStats.Standard} 
                 prefix={<ClockCircleOutlined />} 
@@ -2317,16 +2298,6 @@ const columns = [
                 </span>
               } 
               key="Immediate" 
-            />
-            <TabPane 
-              tab={
-                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <CarOutlined />
-                  Self Collect
-                  <Tag color="green" style={styles.tabBadge}>{jobMethodStats['Self Collect']}</Tag>
-                </span>
-              } 
-              key="Self Collect" 
             />
             <TabPane 
               tab={

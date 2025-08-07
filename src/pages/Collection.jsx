@@ -614,11 +614,6 @@ const styles = {
 
 const CollectionDatesPage = () => {
   const [dates, setDates] = useState([]);
-    const [year, setYear] = useState(new Date().getFullYear());
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [day, setDay] = useState(null);
-  const [trackingSearch, setTrackingSearch] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -639,7 +634,6 @@ const CollectionDatesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const navigate = useNavigate();
-  
 
     const togglePharmacyType = (dateString, pharmacyType) => {
     setExpandedPharmacyTypes(prev => ({
@@ -791,26 +785,38 @@ const renderDateGroup = (dateString, dateOrders) => {
     );
   };
 
-  const fetchOrdersForDate = async (dateString) => {
-    try {
-      const response = await fetch(
-        `https://grpharmacyappserver.onrender.com/api/orders/collection-dates?date=${dateString}`,
-        {
-          headers: {
-            'X-User-Role': userRole
-          }
+const fetchOrdersForDate = async (dateString) => {
+  try {
+    const response = await fetch(
+      `https://grpharmacyappserver.onrender.com/api/orders/collection-dates?date=${dateString}`,
+      {
+        headers: {
+          'X-User-Role': userRole
         }
-      );
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data = await response.json();
-      setOrders(data);
-      setSelectedOrders([]);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
+    );
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  };
+    
+    const data = await response.json();
+    
+    // Debug logging
+    console.log(`Orders for ${dateString}:`, data);
+    console.log(`Number of orders: ${data.length}`);
+    
+    setOrders(data);
+    setSelectedOrders([]);
+    
+    if (data.length === 0) {
+      console.warn(`No orders found for ${dateString} despite count showing otherwise`);
+    }
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    setOrders([]);
+  }
+};
 
 const filterOrders = () => {
   let filtered = selectedDate === 'no-date' 
@@ -930,47 +936,31 @@ const filterOrders = () => {
     setNewCollectionDate(currentDate || '');
   };
 
-const handleSaveCollectionDate = async (orderId) => {
-  try {
-    // Format the date correctly before sending to the backend
-    let formattedDate = '';
-    if (newCollectionDate) {
-      // Parse the input date (assuming format is YYYY-MM-DD from date input)
-      const dateParts = newCollectionDate.split('-');
-      if (dateParts.length === 3) {
-        const year = dateParts[0];
-        const month = dateParts[1];
-        const day = dateParts[2];
-        formattedDate = `${day}-${month}-${year}`; // Format as DD-MM-YYYY for backend
-      } else {
-        throw new Error('Invalid date format');
+  const handleSaveCollectionDate = async (orderId) => {
+    try {
+      const response = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${orderId}/collection-date`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          collectionDate: newCollectionDate || null
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      setEditingOrderId(null);
+      setNewCollectionDate('');
+      refreshCurrentView();
+      fetchCollectionDates();
+    } catch (error) {
+      console.error('Error updating collection date:', error);
+      alert('Error updating collection date. Please try again.');
     }
-
-    const response = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${orderId}/collection-date`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        collectionDate: newCollectionDate ? formattedDate : null,
-        collectionStatus: newCollectionDate ? 'scheduled' : 'pending'
-      }),
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    setEditingOrderId(null);
-    setNewCollectionDate('');
-    refreshCurrentView();
-    fetchCollectionDates();
-  } catch (error) {
-    console.error('Error updating collection date:', error);
-    alert(`Error updating collection date: ${error.message}`);
-  }
-};
+  };
 
   const handleCancelEdit = () => {
     setEditingOrderId(null);

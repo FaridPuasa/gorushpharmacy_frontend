@@ -207,7 +207,7 @@ useEffect(() => {
       
       const filteredOrders = allOrders.filter(order => {
         try {
-          const dateField = order.creationDate || order.dateTimeSubmission;
+          const dateField = order.creationDate || order.creationDate;
           if (!dateField) return false;
           
           let orderDate;
@@ -834,7 +834,7 @@ const filterOrders = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <Clock style={{ width: '14px', height: '14px', color: '#6b7280' }} />
                           <span style={{ fontSize: '13px', fontWeight: '500' }}>
-                            {order.dateTimeSubmission || order.creationDate || 'N/A'}
+                            {order.creationDate || order.creationDate || 'N/A'}
                           </span>
                         </div>
                       </td>

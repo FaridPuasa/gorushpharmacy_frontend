@@ -1189,7 +1189,7 @@ const fetchCustomerOrders = async (customer) => {
                               fontSize: '0.875rem',
                               color: '#64748b'
                             }}>
-                              {formatDate(order.dateTimeSubmission)}
+                              {formatDate(order.creationDate)}
                             </div>
                             <div style={{ gridColumn: 'span 2' }}>
                               <span style={{
