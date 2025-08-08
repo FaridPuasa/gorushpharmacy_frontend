@@ -440,7 +440,7 @@ const criticalAgingOrders = processedOrders.filter(order =>
             <th style={styles.tableHeaderCell}>Tracking #</th>
             <th style={styles.tableHeaderCell}>Customer</th>
             <th style={styles.tableHeaderCell}>Aging Days</th>
-            <th style={styles.tableHeaderCell}>Status</th>
+            
             <th style={styles.tableHeaderCell}>Created On</th>
           </tr>
         </thead>
@@ -469,13 +469,7 @@ const criticalAgingOrders = processedOrders.filter(order =>
                 <td style={styles.tableCell}>
                   {order.receiverName || 'N/A'}
                 </td>
-                <td style={{ 
-                  ...styles.tableCell,
-                  color: order.agingDays >= 10 ? '#b45309' : '#d97706',
-                  fontWeight: '600'
-                }}>
-                  {order.agingDays} days
-                </td>
+
 <td style={{ 
   ...styles.tableCell,
   color: order.agingDays >= 10 ? '#b45309' : '#d97706',
