@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Package, TrendingUp, Calendar, Search, RefreshCw, ArrowLeft, ExternalLink } from 'lucide-react';
+import { Users, Package, TrendingUp, Calendar, Search, RefreshCw, ArrowLeft, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
@@ -16,6 +16,37 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+
+const processedOrders = orders.map(order => {
+  const isCollected = order.goRushStatus?.toLowerCase() === 'collected';
+  const isCancelled = order.goRushStatus?.toLowerCase() === 'cancelled';
+  const isCompleted = ['cancelled', 'collected'].includes(order.pharmacyStatus?.toLowerCase());
+  
+  const creationDate = order.creationDate ? new Date(order.creationDate) : null;
+  const today = new Date();
+  const agingDays = creationDate ? Math.floor((today - creationDate) / (1000 * 60 * 60 * 24)) : null;
+  
+return {
+  ...order,
+  agingDays: isCollected ? 'collected' : 
+            isCancelled ? 'cancelled' :
+            (!isCompleted && creationDate ? agingDays : null),
+  agingStatus: isCollected ? 'Collected' : 
+              isCancelled ? 'Cancelled' :
+              (!isCompleted && agingDays >= 10) ? `Critical (${agingDays} days)` :
+              (!isCompleted && agingDays >= 5) ? `Warning (${agingDays} days)` :
+              agingDays ? `Normal (${agingDays} days)` : 'New'
+};
+});
+
+// Then calculate aging metrics
+const agingOrders = processedOrders.filter(order => 
+  typeof order.agingDays === 'number' && order.agingDays >= 5
+).length;
+
+const criticalAgingOrders = processedOrders.filter(order => 
+  typeof order.agingDays === 'number' && order.agingDays >= 10
+).length;
 
   // Load user role first - same pattern as OrdersPage
   useEffect(() => {
@@ -305,46 +336,168 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Key Metrics */}
-        <div style={styles.metricsGrid}>
-          <div style={styles.metricCard}>
-            <div style={styles.metricContent}>
-              <div>
-                <p style={styles.metricLabel}>Total Orders</p>
-                <p style={{...styles.metricValue, color: '#111827'}}>{totalOrders}</p>
-              </div>
-              <div style={{...styles.metricIcon, backgroundColor: '#dbeafe'}}>
-                <Package style={{ width: '24px', height: '24px', color: '#2563eb' }} />
-              </div>
-            </div>
-          </div>
+{/* Key Metrics */}
+<div style={styles.metricsGrid}>
+  <div style={styles.metricCard}>
+    <div style={styles.metricContent}>
+      <div>
+        <p style={styles.metricLabel}>Total Orders</p>
+        <p style={{...styles.metricValue, color: '#111827'}}>{totalOrders}</p>
+      </div>
+      <div style={{...styles.metricIcon, backgroundColor: '#dbeafe'}}>
+        <Package style={{ width: '24px', height: '24px', color: '#2563eb' }} />
+      </div>
+    </div>
+  </div>
 
-          <div style={styles.metricCard}>
-            <div style={styles.metricContent}>
-              <div>
-                <p style={styles.metricLabel}>Total Customers</p>
-                <p style={{...styles.metricValue, color: '#111827'}}>{totalCustomers}</p>
-              </div>
-              <div style={{...styles.metricIcon, backgroundColor: '#dcfce7'}}>
-                <Users style={{ width: '24px', height: '24px', color: '#16a34a' }} />
-              </div>
-            </div>
-          </div>
+  <div style={styles.metricCard}>
+    <div style={styles.metricContent}>
+      <div>
+        <p style={styles.metricLabel}>Total Customers</p>
+        <p style={{...styles.metricValue, color: '#111827'}}>{totalCustomers}</p>
+      </div>
+      <div style={{...styles.metricIcon, backgroundColor: '#dcfce7'}}>
+        <Users style={{ width: '24px', height: '24px', color: '#16a34a' }} />
+      </div>
+    </div>
+  </div>
 
-          <div style={styles.metricCard}>
-            <div style={styles.metricContent}>
-              <div>
-                <p style={styles.metricLabel}>Today's Collections</p>
-                <p style={{...styles.metricValue, color: '#2563eb'}}>{todaysParcels}</p>
-              </div>
-              <div style={{...styles.metricIcon, backgroundColor: '#dbeafe'}}>
-                <Calendar style={{ width: '24px', height: '24px', color: '#2563eb' }} />
-              </div>
-            </div>
-          </div>
-        </div>
+  <div style={{ 
+    ...styles.metricCard, 
+    borderLeft: '4px solid #f59e0b',
+    backgroundColor: agingOrders > 0 ? '#fffbeb' : 'white' 
+  }}>
+    <div style={styles.metricContent}>
+      <div>
+        <p style={styles.metricLabel}>Aging Orders (5+ days)</p>
+        <p style={{
+          ...styles.metricValue,
+          color: agingOrders > 0 ? '#d97706' : '#6b7280'
+        }}>
+          {agingOrders}
+        </p>
+        <p style={{
+          fontSize: '12px',
+          color: criticalAgingOrders > 0 ? '#b45309' : '#9ca3af',
+          margin: '4px 0 0 0',
+          fontWeight: criticalAgingOrders > 0 ? '600' : '400'
+        }}>
+          {criticalAgingOrders} critical (10+ days)
+        </p>
+      </div>
+      <div style={{
+        ...styles.metricIcon,
+        backgroundColor: agingOrders > 0 ? '#fef3c7' : '#f3f4f6'
+      }}>
+        <Clock style={{ 
+          width: '24px', 
+          height: '24px', 
+          color: agingOrders > 0 ? '#d97706' : '#9ca3af' 
+        }} />
+      </div>
+    </div>
+  </div>
+
+  <div style={styles.metricCard}>
+    <div style={styles.metricContent}>
+      <div>
+        <p style={styles.metricLabel}>Today's Collections</p>
+        <p style={{...styles.metricValue, color: '#2563eb'}}>{todaysParcels}</p>
+      </div>
+      <div style={{...styles.metricIcon, backgroundColor: '#dbeafe'}}>
+        <Calendar style={{ width: '24px', height: '24px', color: '#2563eb' }} />
+      </div>
+    </div>
+  </div>
+</div>
 
         <div style={styles.customersGrid}>
+                  {/* Aging Orders Section */}
+<div style={{ 
+  backgroundColor: 'white',
+  borderRadius: '12px',
+  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+  border: '1px solid #e5e7eb',
+  marginBottom: '24px',
+  overflow: 'hidden'
+}}>
+  <div style={{ padding: '24px', borderBottom: '1px solid #f3f4f6' }}>
+    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: '0 0 4px 0' }}>
+      Aging Orders
+    </h3>
+    <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>
+      Orders pending for 5+ days (sorted by oldest first)
+    </p>
+  </div>
+  
+  {processedOrders.filter(order => 
+    typeof order.agingDays === 'number' && order.agingDays >= 5
+  ).length > 0 ? (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead style={{ backgroundColor: '#f9fafb' }}>
+          <tr>
+            <th style={styles.tableHeaderCell}>Tracking #</th>
+            <th style={styles.tableHeaderCell}>Customer</th>
+            <th style={styles.tableHeaderCell}>Aging Days</th>
+            <th style={styles.tableHeaderCell}>Status</th>
+            <th style={styles.tableHeaderCell}>Created On</th>
+          </tr>
+        </thead>
+        <tbody>
+          {processedOrders
+            .filter(order => typeof order.agingDays === 'number' && order.agingDays >= 5)
+            .sort((a, b) => b.agingDays - a.agingDays)
+            .map(order => (
+              <tr 
+                key={order._id}
+                style={{ 
+                  ...styles.tableRow,
+                  backgroundColor: order.agingDays >= 10 ? '#fff7ed' : 'white'
+                }}
+                onMouseEnter={(e) => e.target.closest('tr').style.backgroundColor = '#f3f4f6'}
+                onMouseLeave={(e) => e.target.closest('tr').style.backgroundColor = order.agingDays >= 10 ? '#fff7ed' : 'white'}
+              >
+                <td style={styles.tableCell}>
+                  <span 
+                    style={styles.trackingNumber}
+                    onClick={() => handleTrackingNumberClick(order._id)}
+                  >
+                    {order.doTrackingNumber || 'N/A'}
+                  </span>
+                </td>
+                <td style={styles.tableCell}>
+                  {order.receiverName || 'N/A'}
+                </td>
+                <td style={{ 
+                  ...styles.tableCell,
+                  color: order.agingDays >= 10 ? '#b45309' : '#d97706',
+                  fontWeight: '600'
+                }}>
+                  {order.agingDays} days
+                </td>
+<td style={{ 
+  ...styles.tableCell,
+  color: order.agingDays >= 10 ? '#b45309' : '#d97706',
+  fontWeight: '600'
+}}>
+  {order.agingDays}
+</td>
+                <td style={styles.tableCell}>
+                  {order.creationDate ? new Date(order.creationDate).toLocaleDateString() : 'N/A'}
+                </td>
+              </tr>
+            ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <div style={styles.emptyState}>
+      <TrendingUp style={styles.emptyIcon} />
+      <p>No aging orders found. All orders are up to date!</p>
+    </div>
+  )}
+</div>
           {/* Top Customers */}
           <div style={styles.customerCard}>
             <div style={styles.customerHeader}>
@@ -557,7 +710,10 @@ const Dashboard = () => {
               </div>
             )}
           </div>
+
+          
         </div>
+
       </div>
     </div>
   );
@@ -570,6 +726,20 @@ const styles = {
     backgroundColor: '#f9fafb',
     fontFamily: 'system-ui, -apple-system, sans-serif'
   },
+  agingBadge: {
+  padding: '4px 8px',
+  borderRadius: '12px',
+  fontSize: '12px',
+  fontWeight: '500'
+},
+agingWarning: {
+  backgroundColor: '#fef3c7',
+  color: '#92400e'
+},
+agingCritical: {
+  backgroundColor: '#ffedd5',
+  color: '#9a3412'
+},
   loadingContainer: {
     display: 'flex',
     justifyContent: 'center',
@@ -836,6 +1006,20 @@ const styles = {
     color: '#6b7280',
     margin: 0
   },
+  warningMetric: {
+  borderLeft: '4px solid #f59e0b',
+  backgroundColor: '#fffbeb'
+},
+warningValue: {
+  color: '#d97706'
+},
+criticalText: {
+  color: '#b45309',
+  fontWeight: '600'
+},
+warningIcon: {
+  backgroundColor: '#fef3c7'
+},
   ordersTable: {
     width: '100%',
     borderCollapse: 'collapse'
