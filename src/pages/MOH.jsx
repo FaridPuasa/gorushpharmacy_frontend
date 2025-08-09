@@ -1132,7 +1132,7 @@ return `<!DOCTYPE html>
         <th width="45px">Dry Med</th>
         <th width="45px">Fridge Sticker</th>
         <th width="45px">Fridge Item</th>
-        <th width="100px">Remarks</th>
+        <th width="100px">Remark</th>
         <th width="60px">Area</th>
         <th width="70px">BruHIMs #</th>
         <th width="70px">Tracking #</th>
@@ -1271,7 +1271,7 @@ const generateExcelFromPreviewData = (previewData, customFileName) => {
       'Phone Number': row.rawData.receiverPhoneNumber || 'N/A',
       'Additional Phone Number': row.rawData.additionalPhoneNumber || 'N/A',
       'Delivery Code': row.deliveryCode,
-      'Remarks': row.rawData.remarks || 'N/A'
+      'Remark': row.rawData.remarks || 'N/A'
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(sheetData);
