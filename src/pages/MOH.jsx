@@ -477,7 +477,7 @@ const MohOrdersDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
     const [startNumber, setStartNumber] = useState(1);
   const [previewData, setPreviewData] = useState(null);
-  const [pageSize, setPageSize] = useState(15);
+  const [pageSize, setPageSize] = useState(15)
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [savedForms, setSavedForms] = useState([]);
@@ -1440,7 +1440,8 @@ const calculateJobMethodStats = (orders) => {
       stats.noCollectionDate++;
     }
 
-    const noForm = !savedOrders.includes(order._id);
+    // Check if form is not created (using pharmacyFormCreated field)
+    const noForm = order.pharmacyFormCreated !== 'Yes';
     if (noForm) {
       stats.noFormCreated++;
     }
@@ -1541,21 +1542,21 @@ const getFilteredOrdersByTab = () => {
       break;
     case 'noFormCreated':
       filtered = filtered.filter(o => 
-        !savedOrders.includes(o._id) && 
+        o.pharmacyFormCreated !== 'Yes' && 
         o.goRushStatus !== 'cancelled'
       );
       break;
     case 'StandardNoForm':
       filtered = filtered.filter(o => 
-        o.jobMethod === 'Standard' && 
-        !savedOrders.includes(o._id) && 
+        (o.jobMethod === 'Standard' || o.jobMethod === 'Self Collect') && 
+        o.pharmacyFormCreated !== 'Yes' && 
         o.goRushStatus !== 'cancelled'
       );
       break;
     case 'ExpressNoForm':
       filtered = filtered.filter(o => 
         o.jobMethod === 'Express' && 
-        !savedOrders.includes(o._id) && 
+        o.pharmacyFormCreated !== 'Yes' && 
         o.goRushStatus !== 'cancelled'
       );
       break;
@@ -1563,7 +1564,7 @@ const getFilteredOrdersByTab = () => {
       filtered = filtered.filter(o => 
         o.appointmentDistrict === "Tutong" && 
         o.sendOrderTo === "PMMH" &&
-        !savedOrders.includes(o._id) && 
+        o.pharmacyFormCreated !== 'Yes' && 
         o.goRushStatus !== 'cancelled'
       );
       break;
@@ -1571,7 +1572,7 @@ const getFilteredOrdersByTab = () => {
       filtered = filtered.filter(o => 
         o.appointmentDistrict === "Belait" && 
         o.sendOrderTo === "SSBH" &&
-        !savedOrders.includes(o._id) && 
+        o.pharmacyFormCreated !== 'Yes' && 
         o.goRushStatus !== 'cancelled'
       );
       break;
@@ -1587,7 +1588,7 @@ const getFilteredOrdersByTab = () => {
       );
       break;
     default: // 'all' tab
-      // No additional filtering needed, but we could add cancelled filter if desired
+      // No additional filtering needed
       break;
   }
   
@@ -1598,9 +1599,9 @@ const getFilteredOrdersByTab = () => {
       return (
         order.doTrackingNumber?.toLowerCase().includes(lowerTerm) ||
         order.receiverName?.toLowerCase().includes(lowerTerm) ||
-        (savedOrders.includes(order._id) && 
-          savedForms.find(f => f.orderIds?.includes(order._id))?.formName?.toLowerCase().includes(lowerTerm))
-      );
+        (order.pharmacyFormCreated === 'Yes' && 
+          savedForms.find(f => f.orderIds?.includes(order._id))?.formName?.toLowerCase().includes(lowerTerm)
+      ));
     });
   }
   
@@ -2413,9 +2414,12 @@ const columns = [
     ...rowSelection,
   }}
   pagination={{
-    pageSize: 15,
+    pageSize: pageSize,
     showSizeChanger: true,
     pageSizeOptions: ['15', '30', '50', '100'],
+    onShowSizeChange: (current, size) => {
+      setPageSize(size);
+    },
     showQuickJumper: true,
     showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} orders`,
   }}
