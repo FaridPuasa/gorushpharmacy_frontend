@@ -699,16 +699,20 @@ const preparePreviewData = (selectedRows, currentStartNumber) => {
 
 
 const handlePreview = () => {
-  if (selectedRows.length === 0) {
+  // Get the full selected records by filtering all orders
+  const fullSelectedRows = orders.filter(order => 
+    selectedRowKeys.includes(order._id)
+  );
+
+  if (fullSelectedRows.length === 0) {
     message.warning('Please select at least one order to export');
     return;
   }
   
-  const previewData = preparePreviewData(selectedRows, startNumber);
+  const previewData = preparePreviewData(fullSelectedRows, startNumber);
   setPreviewData(previewData);
   setIsPreviewVisible(true);
 };
-
 const generateHTMLPreview = (previewData) => {
   const rows = previewData.rows.map(row => `
     <tr>
@@ -1267,7 +1271,7 @@ const generateExcelFromPreviewData = (previewData, customFileName) => {
       'Phone Number': row.rawData.receiverPhoneNumber || 'N/A',
       'Additional Phone Number': row.rawData.additionalPhoneNumber || 'N/A',
       'Delivery Code': row.deliveryCode,
-      'Remarks': row.rawData.pharmacyremarkss?.[0]?.remarks || 'N/A'
+      'Remarks': row.rawData.remarks || 'N/A'
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(sheetData);
@@ -1326,7 +1330,6 @@ const handleSaveToDMS = async (batchValue = 1) => {
       
       // Save the complete preview data and HTML
       previewData: completePreviewData,
-      htmlPreview: htmlPreview
     });
     
     if (response.data.success) {
@@ -1423,7 +1426,6 @@ const calculateJobMethodStats = (orders) => {
     Others: 0,
     Cancelled: 0,
     noCollectionDate: 0,
-    noFormCreated: 0,
     StandardNoForm: 0,
     ExpressNoForm: 0,
     TTGNoForm: 0,
@@ -1440,19 +1442,19 @@ const calculateJobMethodStats = (orders) => {
       stats.noCollectionDate++;
     }
 
-    // Check if form is not created (using pharmacyFormCreated field)
+    // Check if form is not created
     const noForm = order.pharmacyFormCreated !== 'Yes';
-    if (noForm) {
-      stats.noFormCreated++;
-    }
-
+    
+    // First check for TTG/KB specific conditions
     if (order.appointmentDistrict === "Tutong" && order.sendOrderTo === "PMMH") {
       stats.TTG++;
       if (noForm) stats.TTGNoForm++;
     } else if (order.appointmentDistrict === "Belait" && order.sendOrderTo === "SSBH") {
       stats.KB++;
       if (noForm) stats.KBNoForm++;
-    } else if (order.jobMethod === 'Standard' || order.jobMethod === 'Self Collect') {
+    } 
+    // Then check for Standard/Express/Immediate
+    else if (order.jobMethod === 'Standard' || order.jobMethod === 'Self Collect') {
       stats.Standard++;
       if (noForm) stats.StandardNoForm++;
     } else if (order.jobMethod === 'Express') {
@@ -1507,17 +1509,21 @@ const getFilteredOrdersByTab = () => {
     case 'Standard':
       filtered = filtered.filter(o => 
         (o.jobMethod === 'Standard' || o.jobMethod === 'Self Collect') && 
-        o.goRushStatus !== 'cancelled'
+        o.goRushStatus !== 'cancelled' &&
+        !(o.appointmentDistrict === "Tutong" && o.sendOrderTo === "PMMH") &&
+        !(o.appointmentDistrict === "Belait" && o.sendOrderTo === "SSBH")
       );
       break;
     case 'Express':
       filtered = filtered.filter(o => 
-        o.jobMethod === 'Express' && o.goRushStatus !== 'cancelled'
+        o.jobMethod === 'Express' && 
+        o.goRushStatus !== 'cancelled'
       );
       break;
     case 'Immediate':
       filtered = filtered.filter(o => 
-        o.jobMethod === 'Immediate' && o.goRushStatus !== 'cancelled'
+        o.jobMethod === 'Immediate' && 
+        o.goRushStatus !== 'cancelled'
       );
       break;
     case 'TTG':
@@ -1540,17 +1546,13 @@ const getFilteredOrdersByTab = () => {
         o.goRushStatus !== 'cancelled'
       );
       break;
-    case 'noFormCreated':
-      filtered = filtered.filter(o => 
-        o.pharmacyFormCreated !== 'Yes' && 
-        o.goRushStatus !== 'cancelled'
-      );
-      break;
     case 'StandardNoForm':
       filtered = filtered.filter(o => 
         (o.jobMethod === 'Standard' || o.jobMethod === 'Self Collect') && 
         o.pharmacyFormCreated !== 'Yes' && 
-        o.goRushStatus !== 'cancelled'
+        o.goRushStatus !== 'cancelled' &&
+        !(o.appointmentDistrict === "Tutong" && o.sendOrderTo === "PMMH") &&
+        !(o.appointmentDistrict === "Belait" && o.sendOrderTo === "SSBH")
       );
       break;
     case 'ExpressNoForm':
@@ -1975,13 +1977,17 @@ const columns = [
     },
   ];
 
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: (selectedRowKeys, selectedRows) => {
-      setSelectedRowKeys(selectedRowKeys);
-      setSelectedRows(selectedRows);
-    },
-  };
+const rowSelection = {
+  selectedRowKeys,
+  onChange: (selectedRowKeys, selectedRows) => {
+    setSelectedRowKeys(selectedRowKeys);
+    setSelectedRows(selectedRows);
+  },
+  preserveSelectedRowKeys: true, // This keeps selections across pagination
+  getCheckboxProps: (record) => ({
+    disabled: record.goRushStatus === 'cancelled',
+  }),
+};
 
   if (error) {
     return (
@@ -2340,16 +2346,6 @@ const columns = [
     } 
     key="noCollectionDate" 
   />
-  <TabPane 
-    tab={
-      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <FileExclamationOutlined />
-        No Form Created
-        <Tag color="orange" style={styles.tabBadge}>{jobMethodStats.noFormCreated}</Tag>
-      </span>
-    } 
-    key="noFormCreated" 
-  />
     <TabPane 
     tab={
       <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -2409,10 +2405,7 @@ const columns = [
   rowKey="_id"
   size="middle"
   scroll={{ x: 1500 }}
-  rowSelection={{
-    type: 'checkbox',
-    ...rowSelection,
-  }}
+  rowSelection={rowSelection}
   pagination={{
     pageSize: pageSize,
     showSizeChanger: true,
@@ -2422,11 +2415,6 @@ const columns = [
     },
     showQuickJumper: true,
     showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} orders`,
-  }}
-  style={{
-    ...styles.table,
-    border: '1px solid #f0f0f0',
-    borderRadius: '8px',
   }}
 />
           </Spin>
