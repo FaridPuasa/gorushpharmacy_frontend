@@ -450,10 +450,7 @@ const exportToExcel = async () => {
         'Phone Number': getValue('receiverPhoneNumber') || getValue('phoneNumber') || getValue('receiverPhone'),
         'Additional Phone Number': getValue('additionalPhoneNumber') || getValue('altPhoneNumber'),
         'Delivery Code': getValue('deliveryCode') || prefix,
-        'Remarks': getValue('pharmacyremarkss.0.remarks') || 
-                  getValue('pharmacyRemarks.0.remark') || 
-                  getValue('remarks') ||
-                  getValue('note')
+        'Remarks': getValue('remarks') // Simply get the remarks field directly
       };
     });
 
