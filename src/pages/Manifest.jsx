@@ -328,6 +328,442 @@ const ManifestViewer = () => {
     });
   };
 
+  const generatePackingListExcel = (previewData) => {
+  if (!previewData?.rows) return;
+
+  const wsData = [];
+
+  // Row 1: Title - GO RUSH ORDER / PACKING LIST (will be merged C1:H3)
+  wsData.push(['', '', 'GO RUSH ORDER / PACKING LIST']); // Row 1
+  wsData.push([]); // Row 2
+  // Get today's date in DD.MM.YY format
+  const today = new Date();
+  const formattedDate = today.getDate().toString().padStart(2, '0') + '.' + 
+                       (today.getMonth() + 1).toString().padStart(2, '0') + '.' + 
+                       today.getFullYear().toString().slice(-2);
+  
+  wsData.push(['DATE:', formattedDate, '', '', '', '', '', '', '', '', 'PREPARED BY:','Nadirah']);
+
+  // Row 4: Table headers
+  wsData.push([
+    'TRACKING NO. #', 'NAME', 'DRY MEDICINE', 'FRIDGE STICKER', 'FRIDGE ITEM',
+    'REMARKS (CUSTOMER)', 'AREA', 'BRUHIMS#', 'TRACKING #', 'PHONE #',
+    'DELIVERY TYPE', 'REMARKS (INTERNAL)'
+  ]);
+
+  // Row 5+: Data rows
+  previewData.rows.forEach(row => {
+    wsData.push([
+      row.number || 'N/A',
+      row.rawData.receiverName || 'N/A',
+      '',
+      '',
+      '',
+      row.rawData.remarks || '',
+      row.rawData.area || 'N/A',
+      row.rawData.patientNumber || 'N/A',
+      row.number || 'N/A',
+      row.rawData.receiverPhoneNumber || 'N/A',
+      row.rawData.jobMethod || 'N/A',
+      row.rawData.internalRemarks || ''
+    ]);
+  });
+
+  // Footer rows - moved to column A
+  wsData.push([]);
+  wsData.push(['COLLECTION DATE:', previewData.summary.collectionDate || '']);
+  wsData.push(['RECEIVED BY (DRIVER):']);
+  wsData.push(['PHARMACY:', previewData.summary.pharmacy || '']);
+
+  // Generate worksheet
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // === Merges ===
+  ws['!merges'] = [
+    // Title: GO RUSH ORDER / PACKING LIST (C1 to H3)
+    { s: { r: 0, c: 2 }, e: { r: 2, c: 7 } },
+    
+    // DATE (A3:B3)
+    { s: { r: 2, c: 0 }, e: { r: 2, c: 1 } },
+    
+    // PREPARED BY (K3:L3)
+    { s: { r: 2, c: 10 }, e: { r: 2, c: 11 } },
+  ];
+
+  // === Styling ===
+  // Make title bold and center using inline styling
+  if (!ws['C1']) ws['C1'] = {};
+  ws['C1'].v = 'GO RUSH ORDER / PACKING LIST';
+  ws['C1'].t = 's';
+  ws['C1'].s = { 
+    font: { bold: true, size: 14 }, 
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    fill: { fgColor: { rgb: "FFFFFF" } }
+  };
+
+  // Column width (optional)
+  ws['!cols'] = new Array(12).fill({ wch: 20 });
+
+  // Finalize export
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Packing List");
+  const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officeedocument.spreadsheetml.sheet' });
+  const fileName = `Packing_List_${previewData.summary.batch || dayjs().format('YYYYMMDD')}`;
+  saveAs(blob, `${fileName}.xlsx`);
+};
+
+const handlePreviewPackingList = () => {
+  if (!selectedManifest?.previewData?.rows) {
+    alert('No preview data available for this manifest');
+    return;
+  }
+  
+  // Generate the HTML content for the packing list
+  const htmlContent = generatePackingListHTML(selectedManifest.previewData);
+  
+  // Open a new tab with the HTML content
+  const newWindow = window.open('', '_blank');
+  
+  // Add message listener before writing content
+  const messageHandler = (event) => {
+    if (event.data?.type === 'exportExcel') {
+      // Use the data from the message or fallback to current previewData
+      const data = event.data.data ? JSON.parse(decodeURIComponent(event.data.data)) : selectedManifest.previewData;
+      generatePackingListExcel(data);
+    }
+  };
+  
+  window.addEventListener('message', messageHandler);
+  
+  // Cleanup listener when window closes
+  newWindow.onbeforeunload = () => {
+    window.removeEventListener('message', messageHandler);
+  };
+  
+  newWindow.document.write(htmlContent);
+  newWindow.document.close();
+};
+
+// Add this function after the other utility functions
+const generatePackingListHTML = (previewData) => {
+  // Calculate totals for each column that needs it
+  const totals = {
+    dryMedicine: previewData.rows.length,
+    fridgeSticker: previewData.rows.length,
+    fridgeItem: previewData.rows.length
+  };
+
+  const rows = previewData.rows.map(row => {
+    // Determine pharmacy based on tracking number
+    const pharmacy = row.number?.startsWith('T') ? 'PMMH' : 
+                    row.number?.startsWith('K') ? 'SSBH' : 
+                    'MOH Pharmacy';
+    
+    return `
+    <tr>
+      <td style="font-weight: bold;">${row.number || 'N/A'}</td>
+      <td>${row.rawData.receiverName || 'N/A'}</td>
+      <td style="text-align: center;"></td>
+      <td style="text-align: center;"></td>
+      <td style="text-align: center;"></td>
+      <td>${row.rawData.remarks || ''}</td>
+      <td>${row.rawData.area || 'N/A'}</td>
+      <td>${row.rawData.patientNumber || 'N/A'}</td>
+      <td>${row.rawData.doTrackingNumber || 'N/A'}</td>
+      <td>${row.rawData.receiverPhoneNumber || 'N/A'}</td>
+      <td>${row.rawData.jobMethod || 'N/A'}</td>
+      <td>${row.rawData.internalRemarks || ''}</td>
+    </tr>
+    `;
+  }).join('');
+
+  // Determine default pharmacy based on first row's tracking number
+  const defaultPharmacy = previewData.rows[0]?.number?.startsWith('T') ? 'PMMH' : 
+                         previewData.rows[0]?.number?.startsWith('K') ? 'SSBH' : 
+                         'MOH Pharmacy';
+
+  // Properly escape the JSON data for use in JavaScript
+  const jsonData = encodeURIComponent(JSON.stringify(previewData));
+
+return `<!DOCTYPE html>
+<html>
+<head>
+  <title>Packing List - ${previewData.summary.batch || 'MOH Orders'}</title>
+  <style>
+    @page {
+      size: A4 landscape;
+      margin: 10mm;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+      font-size: 12px;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #1890ff;
+    }
+    
+    .title {
+      text-align: center;
+      margin: 0;
+      color: #1890ff;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    
+    .logo {
+      height: 60px;
+      width: auto;
+    }
+    
+    .summary {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      padding: 10px;
+      background-color: #f8f8f8;
+      border-radius: 4px;
+    }
+    
+    .summary-item {
+      display: flex;
+      gap: 5px;
+    }
+    
+    .summary-label {
+      font-weight: bold;
+    }
+    
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      page-break-inside: avoid;
+    }
+    
+    th {
+      background-color: #1890ff !important;
+      color: white !important;
+      padding: 8px;
+      text-align: left;
+      font-weight: bold;
+      border: 1px solid #ddd;
+    }
+
+        @media print {
+      body {
+        padding: 0;
+        margin: 0;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      
+      .header, .summary, .footer {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      
+      th {
+        background-color: #1890ff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: white !important;
+      }
+      
+      .button-container {
+        display: none !important;
+      }
+    }
+    
+    td {
+      padding: 6px;
+      border: 1px solid #ddd;
+      vertical-align: top;
+    }
+    
+    /* Enhanced styling for Internal Notes column */
+    .internal-notes {
+      min-width: 200px;
+      max-width: 300px;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+    
+    .footer {
+      margin-top: 20px;
+      padding-top: 10px;
+      border-top: 2px solid #1890ff;
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .footer-item {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .footer-label {
+      font-weight: bold;
+    }
+    
+    .signature-line {
+      width: 200px;
+      border-top: 1px solid #333;
+      margin-top: 30px;
+    }
+    
+    .totals {
+      font-weight: bold;
+      background-color: #f0f0f0;
+    }
+    
+    .button-container {
+      display: none;
+    }
+    
+    @media screen {
+      .button-container {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin: 20px 0;
+      }
+      
+      button {
+        padding: 8px 16px;
+        background-color: #1890ff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      
+      button:hover {
+        opacity: 0.9;
+      }
+      
+      button.print {
+        background-color: #1890ff;
+      }
+      
+      button.export {
+        background-color: #52c41a;
+      }
+      
+      button.close {
+        background-color: #f5222d;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div style="width: 80px;"></div> <!-- Spacer for logo alignment -->
+    <h1 class="title">GO RUSH PHARMACY PACKING LIST</h1>
+    <img src="/gorushlogo.png" alt="Go Rush Logo" class="logo">
+  </div>
+  
+  <div class="summary">
+    <div class="summary-item">
+      <span class="summary-label">Date:</span>
+      <span>${new Date().toLocaleDateString('en-GB')}</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Prepared By:</span>
+      <span>${previewData.summary.preparedBy || 'Nadirah'}</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Total Items:</span>
+      <span>${previewData.rows.length}</span>
+    </div>
+  </div>
+  
+  <table>
+    <thead>
+      <tr>
+        <th width="60px">No.</th>
+        <th width="120px">Patient Name</th>
+        <th width="45px">Dry Med</th>
+        <th width="45px">Fridge Sticker</th>
+        <th width="45px">Fridge Item</th>
+        <th width="100px">Remark</th>
+        <th width="60px">Area</th>
+        <th width="70px">BruHIMs #</th>
+        <th width="70px">Tracking #</th>
+        <th width="80px">Phone #</th>
+        <th width="70px">Delivery Type</th>
+        <th class="internal-notes">Internal Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rows}
+    </tbody>
+  </table>
+  
+  <div class="footer">
+    <div class="footer-item">
+      <span class="footer-label">Collection Date:</span>
+      <span>${previewData.summary.collectionDate || '_________________'}</span>
+    </div>
+    <div class="footer-item">
+      <span class="footer-label">Received By (Driver):</span>
+      <div class="signature-line"></div>
+    </div>
+    <div class="footer-item">
+      <span class="footer-label">Pharmacy:</span>
+      <span>${defaultPharmacy}</span>
+    </div>
+  </div>
+  
+  <div class="button-container">
+    <button class="print" onclick="window.print()">Print</button>
+    <button class="close" onclick="window.close()">Close</button>
+  </div>
+
+  <script>
+    const packingListData = "${jsonData}";
+    
+    function exportToExcel() {
+      try {
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage({
+            type: 'exportExcel',
+            data: packingListData
+          }, '*');
+        } else {
+          const fallbackUrl = 'https://grpharmacyappserver.onrender.com/api/export-packing-list?data=' + packingListData;
+          window.open(fallbackUrl, '_blank');
+        }
+      } catch (error) {
+        alert('Export error: ' + error.message);
+      }
+    }
+    
+    // Auto-print when opened (optional)
+    window.addEventListener('load', () => {
+      if (new URLSearchParams(window.location.search).has('autoprint')) {
+        window.print();
+      }
+    });
+  </script>
+</body>
+</html>`;
+};
   
 
 const formatDateTimeExtraction = (dateString) => {
@@ -494,6 +930,16 @@ const exportToExcel = async () => {
     setError(null);
   };
 
+  const handleDownloadPackingList = (manifest) => {
+  if (!manifest.previewData) {
+    alert('No preview data available for this manifest');
+    return;
+  }
+  
+  // Generate the packing list Excel file
+  generatePackingListExcel(manifest.previewData);
+};
+
   const highlightSearchTerm = (text) => {
   if (!searchTerm || !text) return text;
   
@@ -642,8 +1088,20 @@ const filteredAndSortedManifests = manifests
                   </>
                 )}
               </button>
-            </div>
+
+<button 
+  onClick={() => handlePreviewPackingList()}
+                style={{
+                  ...styles.exportButton,
+                  ...(exporting && { backgroundColor: '#059669' }),
+                  marginLeft: "20px"
+                }}
+>
+  <Eye size={16} style={{ marginRight: '0.5rem' }} />
+  Preview Packing List
+</button>
           </div>
+                      </div>
 
           {error && (
             <div style={styles.errorCard}>
