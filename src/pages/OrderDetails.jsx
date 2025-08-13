@@ -816,6 +816,14 @@ const handleStatusUpdate = async (statusType, newStatus) => {
                 <span style={styles.label}>Appointment Place:</span>
                 <span style={styles.value}>{order.appointmentPlace || 'N/A'}</span>
               </div>
+              <div style={{ ...styles.row, borderBottom: 'none' }}>
+                <span style={styles.label}>Appointment District:</span>
+                <span style={styles.value}>{order.appointmentDistrict || 'N/A'}</span>
+              </div>
+              <div style={{ ...styles.row, borderBottom: 'none' }}>
+                <span style={styles.label}>Pharmacy:</span>
+                <span style={styles.value}>{order.sendOrderTo || 'N/A'}</span>
+              </div>
             </div>
           </div>
         </div>
