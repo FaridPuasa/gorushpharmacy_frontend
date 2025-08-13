@@ -198,7 +198,41 @@ const styles = {
     fontWeight: '500',
     cursor: 'pointer',
     marginTop: '0.5rem'
+  },
+  editButton: {
+  padding: '0.25rem 0.5rem',
+  borderRadius: '0.25rem',
+  backgroundColor: '#f3f4f6',
+  color: '#4b5563',
+  border: 'none',
+  cursor: 'pointer',
+  fontSize: '0.75rem',
+  marginLeft: '0.5rem',
+  '&:hover': {
+    backgroundColor: '#e5e7eb'
   }
+},
+paymentInput: {
+  width: '100px',
+  padding: '0.25rem 0.5rem',
+  borderRadius: '0.25rem',
+  border: '1px solid #d1d5db'
+},
+paymentButton: {
+  padding: '0.25rem 0.5rem',
+  borderRadius: '0.25rem',
+  border: 'none',
+  cursor: 'pointer',
+  marginLeft: '0.25rem'
+},
+paymentSave: {
+  backgroundColor: '#3b82f6',
+  color: 'white'
+},
+paymentCancel: {
+  backgroundColor: '#f3f4f6',
+  color: '#4b5563'
+}
 };
 
 // Configuration object - replace with your actual API key
@@ -215,6 +249,9 @@ const OrderDetails = () => {
   const [detrackData, setDetrackData] = useState(null);
   const [detrackLoading, setDetrackLoading] = useState(false);
   const [detrackError, setDetrackError] = useState(null);
+
+  const [editingPayment, setEditingPayment] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
   
   // Form states
   const [logNote, setLogNote] = useState('');
@@ -322,6 +359,62 @@ const fetchDetrackData = async (trackingNumber) => {
     setDetrackError(err.message);
   } finally {
     setDetrackLoading(false);
+  }
+};
+
+useEffect(() => {
+  if (order) {
+    setPaymentAmount(order.paymentAmount || '');
+  }
+}, [order]);
+
+const handleUpdatePaymentAmount = async () => {
+  try {
+    // First update our database
+    const response = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${id}/payment`, {
+      method: 'PUT',
+      headers: getRequestHeaders(),
+      body: JSON.stringify({ 
+        paymentAmount: parseFloat(paymentAmount),
+        doTrackingNumber: order.doTrackingNumber
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Failed to update payment amount' }));
+      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const responseData = await response.json();
+    
+    // Handle different response structures from backend
+    let updatedOrder;
+    if (responseData.order) {
+      // Response has nested structure (with DeTrack update info)
+      updatedOrder = responseData.order;
+    } else {
+      // Response is the order directly (no tracking number case)
+      updatedOrder = responseData;
+    }
+    
+    // Update both the order and paymentAmount states
+    setOrder(updatedOrder);
+    setPaymentAmount(updatedOrder.paymentAmount || '');
+    setEditingPayment(false);
+    
+    // Show appropriate success message based on DeTrack update status
+    if (responseData.detrackUpdate === false) {
+      alert(`Payment amount updated successfully! Note: ${responseData.message || 'DeTrack update had issues but order was saved.'}`);
+    } else {
+      alert('Payment amount updated successfully!');
+    }
+    
+  } catch (err) {
+    console.error('Error updating payment amount:', err);
+    alert(`Error updating payment amount: ${err.message}`);
+    // Reset to original value on error
+    setPaymentAmount(order.paymentAmount || '');
+    setEditingPayment(false);
   }
 };
 
@@ -609,10 +702,50 @@ const handleStatusUpdate = async (statusType, newStatus) => {
                 <span style={styles.label}>Delivery Type:</span>
                 <span style={styles.value}>{order.jobMethod || 'N/A'}</span>
               </div>
-              <div style={{ ...styles.row, borderBottom: 'none' }}>
-                <span style={styles.label}>Payment Amount:</span>
-                <span style={styles.valueGreen}>${order.paymentAmount || 'N/A'}</span>
-              </div>
+<div style={styles.row}>
+  <span style={styles.label}>Payment Amount:</span>
+  {!order ? (
+    <span style={styles.value}>Loading...</span>
+  ) : editingPayment ? (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <input
+        type="number"
+        value={paymentAmount}
+        onChange={(e) => setPaymentAmount(e.target.value)}
+        style={styles.paymentInput}
+      />
+      <button
+        onClick={handleUpdatePaymentAmount}
+        style={{ ...styles.paymentButton, ...styles.paymentSave }}
+      >
+        Save
+      </button>
+      <button
+        onClick={() => {
+          setEditingPayment(false);
+          setPaymentAmount(order.paymentAmount || '');
+        }}
+        style={{ ...styles.paymentButton, ...styles.paymentCancel }}
+      >
+        Cancel
+      </button>
+    </div>
+  ) : (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <span style={styles.valueGreen}>
+        {order.paymentAmount ? `$${order.paymentAmount}` : 'N/A'}
+      </span>
+      {(userRole === 'gorush') && (
+        <button
+          onClick={() => setEditingPayment(true)}
+          style={styles.editButton}
+        >
+          Edit
+        </button>
+      )}
+    </div>
+  )}
+</div>
             </div>
           </div>
 
