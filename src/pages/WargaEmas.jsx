@@ -339,7 +339,7 @@ const navigate = useNavigate();
                   >
                     <option value="Standard">Standard</option>
                     <option value="Express">Express</option>
-                    <option value="Same Day">Same Day</option>
+                    <option value="Immediate">Immediate</option>
                   </select>
                 </div>
                 
