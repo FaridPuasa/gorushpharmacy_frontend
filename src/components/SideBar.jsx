@@ -150,13 +150,13 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
       path: '/manifestviewer',
       roles: ['gorush']
     },
-    //     {
-    //   id: 'wargaemas',
-    //   label: 'Warga Emas',
-    //   icon: FileText,
-    //   path: '/wargaemas',
-    //   roles: ['gorush']
-    // }
+        {
+      id: 'wargaemas',
+      label: 'Warga Emas',
+      icon: FileText,
+      path: '/wargaemas',
+      roles: ['gorush']
+    }
   ];
 
   // Bottom menu items

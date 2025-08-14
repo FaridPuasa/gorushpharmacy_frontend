@@ -10,7 +10,7 @@ import OrderDetails from './pages/OrderDetails';
 import PasswordModal from './components/PasswordModal';
 import MohOrdersDashboard from './pages/MOH';
 import ManifestViewer from './pages/Manifest';
-// import WargaEmas from './pages/WargaEmas';
+import WargaEmas from './pages/WargaEmas';
 
 function App() {
   const [userRole, setUserRole] = useState(null);
@@ -115,11 +115,11 @@ function App() {
               <ManifestViewer />
             </ProtectedRoute>
           } />
-          {/* <Route path="wargaemas" element={
+          <Route path="wargaemas" element={
             <ProtectedRoute allowedRoles={['gorush']}>
               <WargaEmas />
             </ProtectedRoute>
-          } /> */}
+          } />
           <Route path="orders/:id" element={
             <ProtectedRoute allowedRoles={['gorush', 'jpmc', 'moh']}>
               <OrderDetails />
