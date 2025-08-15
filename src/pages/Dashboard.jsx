@@ -612,25 +612,28 @@ const criticalAgingOrders = processedOrders.filter(order =>
                   </tr>
                 </thead>
                 <tbody>
-                  {orders
-                    .filter(order => {
-                      // First filter: order must have logs
-                      if (!order.logs || order.logs.length === 0) return false;
-                      
-                     const nonSystemLogs = order.logs.filter(log => 
-  log.createdBy &&
-  log.createdBy.toLowerCase() !== 'system' &&
-  log.createdBy.toLowerCase() !== 'gorush'
-);
+ {orders
+  .filter(order => {
+    // First filter: order must have logs
+    if (!order.logs || order.logs.length === 0) return false;
+    
+    const nonSystemLogs = order.logs.filter(log => 
+      log.createdBy &&
+      log.createdBy.toLowerCase() !== 'system' &&
+      log.createdBy.toLowerCase() !== 'gorush' &&
+      log.createdBy.toLowerCase() !== 'collection_date_sync'
+    );
 
-                      return nonSystemLogs.length > 0;
-                    })
-                    .map(order => {
-                      // Get only non-system logs for this order
-                      const nonSystemLogs = order.logs.filter(log => 
-                        log.createdBy && log.createdBy.toLowerCase() !== 'system'
-                        
-                      );
+    return nonSystemLogs.length > 0;
+  })
+  .map(order => {
+    // Get only non-system logs for this order
+    const nonSystemLogs = order.logs.filter(log => 
+      log.createdBy && 
+      log.createdBy.toLowerCase() !== 'system' &&
+      log.createdBy.toLowerCase() !== 'gorush' &&
+      log.createdBy.toLowerCase() !== 'collection_date_sync'
+    );
                       
                       // Get the most recent non-system log
                       const mostRecentLog = nonSystemLogs.sort((a, b) => 
