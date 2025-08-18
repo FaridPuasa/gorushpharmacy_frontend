@@ -1466,6 +1466,8 @@ const calculateJobMethodStats = (orders) => {
       stats.Others++;
     }
   });
+  stats.noFormCreated = stats.StandardNoForm + stats.ExpressNoForm + stats.TTGNoForm + stats.KBNoForm;
+
 
   stats.all = orders.length;
   setJobMethodStats(stats);
@@ -2242,18 +2244,26 @@ const rowSelection = {
 
   {/* New card for orders without form creation */}
   <Col xs={24} sm={12} lg={8} xl={4}>
-    <Card style={styles.statCard}>
-      <Statistic 
-        title="No Form Created" 
-        value={jobMethodStats.noFormCreated} 
-        prefix={<FileExclamationOutlined />} 
-        valueStyle={{ 
-          color: jobMethodStats.noFormCreated > 0 ? '#faad14' : '#52c41a', 
-          fontSize: '28px', 
-          fontWeight: 'bold' 
-        }} 
-      />
-    </Card>
+<Card style={styles.statCard}>
+  <Statistic 
+    title="No Form Created" 
+    value={jobMethodStats.noFormCreated} 
+    prefix={<FileExclamationOutlined />} 
+    valueStyle={{ 
+      color: jobMethodStats.noFormCreated > 0 ? '#faad14' : '#52c41a',
+      fontSize: '28px',
+      fontWeight: 'bold'
+    }}
+  />
+  {jobMethodStats.noFormCreated > 0 && (
+    <div style={{ marginTop: 8, fontSize: 12 }}>
+      <Tag color="orange" style={{ marginBottom: 10 }}>Standard: {jobMethodStats.StandardNoForm}</Tag>
+      <Tag color="orange">Express: {jobMethodStats.ExpressNoForm}</Tag>
+      <Tag color="purple">TTG: {jobMethodStats.TTGNoForm}</Tag>
+      <Tag color="cyan">KB: {jobMethodStats.KBNoForm}</Tag>
+    </div>
+  )}
+</Card>
   </Col>
         </Row>
 
