@@ -144,7 +144,9 @@ const PreviewModal = ({
   loading,
   startNumber,
     setDateRange,
-  setStartNumber
+  setStartNumber,
+    setSelectedRowKeys,
+  setSelectedRows
 }) => {
   const [batchValue, setBatchValue] = useState(1);
   const [collectionDate, setCollectionDate] = useState(null);
@@ -181,7 +183,7 @@ const handleSaveWithCollectionDate = async () => {
       
       const config = {
         headers: {
-          'X-User-Role': 'gorush' // Or whatever role should have permission
+          'X-User-Role': 'gorush'
         }
       };
 
@@ -205,6 +207,10 @@ const handleSaveWithCollectionDate = async () => {
     }
     
     await onSave(batchValue);
+    
+    // Clear selections using the passed props
+    if (setSelectedRowKeys) setSelectedRowKeys([]);
+    if (setSelectedRows) setSelectedRows([]);
   } catch (error) {
     console.error('Error setting collection date:', error);
     if (error.response?.status === 403) {
@@ -1340,8 +1346,12 @@ const handleSaveToDMS = async (batchValue = 1) => {
       setPreviewData(prev => ({
         ...prev,
         savedToDMS: true,
-        formId: response.data.formId // Store the form ID for future reference
+        formId: response.data.formId
       }));
+
+      // Clear the selections after successful save
+      setSelectedRowKeys([]);
+      setSelectedRows([]);
     } else {
       throw new Error(response.data.error || 'Failed to save to DMS');
     }
@@ -2515,17 +2525,24 @@ TRK006,TRK007,TRK008`}
 <PreviewModal
   visible={isPreviewVisible}
   data={previewData}
-  onCancel={() => setIsPreviewVisible(false)}
+  onCancel={() => {
+    setIsPreviewVisible(false);
+    setSelectedRowKeys([]);
+    setSelectedRows([]);
+  }}
   onSave={handleSaveToDMS}
   onDownloadExcel={handleDownloadExcel}
   onDownloadPackingList={() => handleDownloadPackingList(false)}
-    onPreviewPackingList={handlePreviewPackingList}
+  onPreviewPackingList={handlePreviewPackingList}
   loading={isSaving}
   startNumber={startNumber}
   setStartNumber={setStartNumber}
-    setSelectedDate={setSelectedDate}
-      setDateRange={setDateRange}
+  setSelectedDate={setSelectedDate}
+  setDateRange={setDateRange}
+    setSelectedRowKeys={setSelectedRowKeys}
+  setSelectedRows={setSelectedRows}
 />
+
       </div>
 
 
