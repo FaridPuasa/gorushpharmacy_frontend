@@ -156,6 +156,13 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
       icon: FileText,
       path: '/wargaemas',
       roles: ['gorush']
+    },
+            {
+      id: 'mohnoform',
+      label: 'MOH No Forms',
+      icon: FileText,
+      path: '/mohnoform',
+      roles: ['gorush']
     }
   ];
 

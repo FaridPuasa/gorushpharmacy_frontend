@@ -11,6 +11,7 @@ import PasswordModal from './components/PasswordModal';
 import MohOrdersDashboard from './pages/MOH';
 import ManifestViewer from './pages/Manifest';
 import WargaEmas from './pages/WargaEmas';
+import MohOrdersNoFormDashboard from './pages/MOHnoForm';
 
 function App() {
   const [userRole, setUserRole] = useState(null);
@@ -98,6 +99,11 @@ function App() {
           <Route path="mohorders" element={
             <ProtectedRoute allowedRoles={['gorush']}>
               <MohOrdersDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="mohnoform" element={
+            <ProtectedRoute allowedRoles={['gorush']}>
+              <MohOrdersNoFormDashboard />
             </ProtectedRoute>
           } />
           <Route path="today" element={
