@@ -77,7 +77,7 @@ const PasswordModal = ({ onSuccess }) => {
     setError('');
 
     try {
-      const res = await axios.post('https://grpharmacyappserver.onrender.com/api/auth/login', { username, password });
+      const res = await axios.post('https://gorushpharmacy-server.onrender.com/api/auth/login', { username, password });
       const { role, subrole } = res.data;
 
       console.log('Login response:', res.data);

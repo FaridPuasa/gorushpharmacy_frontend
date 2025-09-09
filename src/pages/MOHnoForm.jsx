@@ -385,7 +385,7 @@ const MohNoFormsDashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('https://grpharmacyappserver.onrender.com/api/orders?role=moh', {
+      const response = await fetch('https://gorushpharmacy-server.onrender.com/api/orders?role=moh', {
         headers: {
           'X-User-Role': 'gorush'
         }

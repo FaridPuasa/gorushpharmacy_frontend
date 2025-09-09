@@ -262,7 +262,7 @@ const ManifestViewer = () => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [exporting, setExporting] = useState(false);
 
-  const API_BASE_URL = 'https://grpharmacyappserver.onrender.com';
+  const API_BASE_URL = 'https://gorushpharmacy-server.onrender.com';
 
   useEffect(() => {
     fetchManifests();
@@ -746,7 +746,7 @@ return `<!DOCTYPE html>
             data: packingListData
           }, '*');
         } else {
-          const fallbackUrl = 'https://grpharmacyappserver.onrender.com/api/export-packing-list?data=' + packingListData;
+          const fallbackUrl = 'https://gorushpharmacy-server.onrender.com/api/export-packing-list?data=' + packingListData;
           window.open(fallbackUrl, '_blank');
         }
       } catch (error) {

@@ -286,7 +286,7 @@ const OrderDetails = () => {
     const fetchOrder = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${id}`, {
+        const response = await fetch(`https://gorushpharmacy-server.onrender.com/api/orders/${id}`, {
           method: 'GET',
           headers: getRequestHeaders()
         });
@@ -334,7 +334,7 @@ const fetchDetrackData = async (trackingNumber) => {
   setDetrackError(null);
   
   try {
-    const response = await fetch(`https://grpharmacyappserver.onrender.com/api/detrack/${trackingNumber}`, {
+    const response = await fetch(`https://gorushpharmacy-server.onrender.com/api/detrack/${trackingNumber}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -371,7 +371,7 @@ useEffect(() => {
 const handleUpdatePaymentAmount = async () => {
   try {
     // First update our database
-    const response = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${id}/payment`, {
+    const response = await fetch(`https://gorushpharmacy-server.onrender.com/api/orders/${id}/payment`, {
       method: 'PUT',
       headers: getRequestHeaders(),
       body: JSON.stringify({ 
@@ -424,7 +424,7 @@ const handleStatusUpdate = async (statusType, newStatus) => {
     const endpoint = statusType === 'goRush' ? 'go-rush-status' : 'pharmacy-status';
     
     // First update our database
-    const response = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${id}/${endpoint}`, {
+    const response = await fetch(`https://gorushpharmacy-server.onrender.com/api/orders/${id}/${endpoint}`, {
       method: 'PUT',
       headers: getRequestHeaders(),
       body: JSON.stringify({ 
@@ -447,7 +447,7 @@ const handleStatusUpdate = async (statusType, newStatus) => {
         console.log('Attempting to cancel DeTrack job:', order.doTrackingNumber);
         
         const detrackResponse = await fetch(
-          `https://grpharmacyappserver.onrender.com/api/detrack/${order.doTrackingNumber}/cancel`, 
+          `https://gorushpharmacy-server.onrender.com/api/detrack/${order.doTrackingNumber}/cancel`, 
           {
             method: 'PUT',
             headers: getRequestHeaders()
@@ -473,7 +473,7 @@ const handleStatusUpdate = async (statusType, newStatus) => {
         }
 
         // Refresh order data after cancellation attempt
-        const updatedOrderResponse = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${id}`, {
+        const updatedOrderResponse = await fetch(`https://gorushpharmacy-server.onrender.com/api/orders/${id}`, {
           method: 'GET',
           headers: getRequestHeaders()
         });
@@ -505,7 +505,7 @@ const handleStatusUpdate = async (statusType, newStatus) => {
     }
 
     try {
-      const response = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${id}/logs`, {
+      const response = await fetch(`https://gorushpharmacy-server.onrender.com/api/orders/${id}/logs`, {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -542,7 +542,7 @@ const handleStatusUpdate = async (statusType, newStatus) => {
     }
 
     try {
-      const response = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/${id}/pharmacy-remarks`, {
+      const response = await fetch(`https://gorushpharmacy-server.onrender.com/api/orders/${id}/pharmacy-remarks`, {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({

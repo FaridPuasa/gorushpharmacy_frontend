@@ -356,7 +356,7 @@ const fetchCustomers = async () => {
     // Get user role from sessionStorage
     const userRole = sessionStorage.getItem('userRole');
     
-    const customersResponse = await fetch('https://grpharmacyappserver.onrender.com/api/customers', {
+    const customersResponse = await fetch('https://gorushpharmacy-server.onrender.com/api/customers', {
       headers: { 
         'Content-Type': 'application/json',
         'X-User-Role': userRole || 'jpmc'
@@ -368,7 +368,7 @@ const fetchCustomers = async () => {
     const customersData = await customersResponse.json();
     
     // Fetch orders count - NOW WITH USER ROLE HEADER
-    const ordersResponse = await fetch('https://grpharmacyappserver.onrender.com/api/orders', {
+    const ordersResponse = await fetch('https://gorushpharmacy-server.onrender.com/api/orders', {
       headers: {
         'Content-Type': 'application/json',
         'X-User-Role': userRole || 'jpmc'
@@ -423,7 +423,7 @@ const fetchCustomerOrders = async (customer) => {
     setOrdersLoading(true);
     setError(null);
     
-    const response = await apiCall(`https://grpharmacyappserver.onrender.com/api/customers/${customer.patientNumber}/orders`);
+    const response = await apiCall(`https://gorushpharmacy-server.onrender.com/api/customers/${customer.patientNumber}/orders`);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

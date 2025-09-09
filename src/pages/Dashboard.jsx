@@ -68,13 +68,13 @@ const criticalAgingOrders = processedOrders.filter(order =>
     setError(null);
     try {
       const [ordersRes, customersRes] = await Promise.all([
-        fetch('https://grpharmacyappserver.onrender.com/api/orders', {
+        fetch('https://gorushpharmacy-server.onrender.com/api/orders', {
           headers: {
             'Content-Type': 'application/json',
             'X-User-Role': userRole || 'jpmc'
           }
         }),
-        fetch('https://grpharmacyappserver.onrender.com/api/customers', {
+        fetch('https://gorushpharmacy-server.onrender.com/api/customers', {
           headers: {
             'Content-Type': 'application/json',
             'X-User-Role': userRole || 'jpmc'
@@ -106,7 +106,7 @@ const criticalAgingOrders = processedOrders.filter(order =>
   const fetchCustomerOrders = async (patientNumber) => {
     setLoadingOrders(true);
     try {
-      const response = await fetch(`https://grpharmacyappserver.onrender.com/api/customers/${patientNumber}/orders`, {
+      const response = await fetch(`https://gorushpharmacy-server.onrender.com/api/customers/${patientNumber}/orders`, {
         headers: {
           'Content-Type': 'application/json',
           'X-User-Role': userRole || 'jpmc'

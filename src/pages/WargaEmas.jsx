@@ -43,7 +43,7 @@ const navigate = useNavigate();
     setReorderError(null);
 
     try {
-      const response = await fetch('https://grpharmacyappserver.onrender.com/api/orders/reorder-webhook-only', {
+      const response = await fetch('https://gorushpharmacy-server.onrender.com/api/orders/reorder-webhook-only', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,7 +82,7 @@ const navigate = useNavigate();
     setError(null);
 
     try {
-      const response = await fetch(`https://grpharmacyappserver.onrender.com/api/orders/search?${searchType}=${searchValue}`, {
+      const response = await fetch(`https://gorushpharmacy-server.onrender.com/api/orders/search?${searchType}=${searchValue}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

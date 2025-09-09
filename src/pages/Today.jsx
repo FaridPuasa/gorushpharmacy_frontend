@@ -102,7 +102,7 @@ const handleClick = () => {
     try {
       const currentRole = userRole || sessionStorage.getItem('userRole') || 'jpmc';
       const promises = selectedOrders.map(orderId => 
-        fetch(`https://grpharmacyappserver.onrender.com/api/orders/${orderId}/collection-date`, {
+        fetch(`https://gorushpharmacy-server.onrender.com/api/orders/${orderId}/collection-date`, {
           method: 'PUT',
           headers: { 
             'Content-Type': 'application/json',
@@ -188,7 +188,7 @@ useEffect(() => {
     try {
       const currentRole = userRole || sessionStorage.getItem('userRole') || 'jpmc';
       
-      const response = await fetch('https://grpharmacyappserver.onrender.com/api/orders', {
+      const response = await fetch('https://gorushpharmacy-server.onrender.com/api/orders', {
         headers: {
           'Content-Type': 'application/json',
           'X-User-Role': currentRole
@@ -298,7 +298,7 @@ const filterOrders = () => {
       const currentRole = userRole || sessionStorage.getItem('userRole') || 'jpmc';
       
       const response = await fetch(
-        `https://grpharmacyappserver.onrender.com/api/orders/${orderId}/collection-date`,
+        `https://gorushpharmacy-server.onrender.com/api/orders/${orderId}/collection-date`,
         {
           method: 'PUT',
           headers: { 
